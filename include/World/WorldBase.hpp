@@ -8,30 +8,37 @@
 
 namespace pathfinding {
 
-template <class TDrived>
+template <class TDrived, class TPos>
 class WorldBase {
  public:
-  template <class TVec3>
-  inline std::string getBlock(const Vec3<TVec3> &pos) {
-    return static_cast<TDrived *>(this)->getBlockImpl(pos);
+  inline std::string getBlock(const TPos &pos) const {
+    return static_cast<const TDrived *>(this)->getBlockImpl(pos);
   };
 
-  template <class TVec3>
-  inline BlockType getBlockType(const Vec3<TVec3> &pos) {
+  virtual inline std::string getBlockImpl(const TPos &pos) const = 0;
+
+  inline BlockType getBlockType(const TPos &pos) const {
     return getBlockType(getBlock(pos));
   };
 
-  inline BlockType getBlockType(const std::string &blockName) {
-    return static_cast<TDrived *>(this)->getBlockTypeImpl(blockName);
+  inline BlockType getBlockType(const std::string &blockName) const {
+    return static_cast<const TDrived *>(this)->getBlockTypeImpl(blockName);
   };
+
+  virtual inline BlockType getBlockTypeImpl(const std::string &blockName) const = 0;
+
+  inline float calFallDamage(const TPos &landingPos,
+                             const typename TPos::value_type &height) const {
+    return static_cast<const TDrived *>(this)->calFallDamageImpl(landingPos, height);
+  };
+
+  virtual inline float calFallDamageImpl(
+      const TPos &landingPos,
+      const typename TPos::value_type &height) const = 0;
 
  private:
   WorldBase() {}
   friend TDrived;
-
-  //  protected:
-  //   template <class TVec3>
-  //   virtual std::string getBlockImpl(const Vec3<TVec3> &pos) = 0;
 };
 
 }  // namespace pathfinding

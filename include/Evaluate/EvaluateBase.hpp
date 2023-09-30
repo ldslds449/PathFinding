@@ -10,8 +10,8 @@ namespace eval {
 template <class TDrived>
 class EvaluateBase {
  public:
-  template <class TVec3>
-  inline static int eval(const Vec3<TVec3> &pos, const Vec3<TVec3> &target) {
+  template <class TPos>
+  inline static U64 eval(const TPos &pos, const TPos &target) {
     return TDrived::evalImpl(pos, target);
   };
 

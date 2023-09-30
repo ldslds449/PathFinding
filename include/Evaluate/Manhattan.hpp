@@ -10,7 +10,7 @@ namespace eval {
 class Manhattan final : public EvaluateBase<Manhattan> {
  public:
   template <class TPos>
-  static int evalImpl(const TPos &pos, const TPos &target) {
+  static U64 evalImpl(const TPos &pos, const TPos &target) {
     return pos.manhattanDist(target);
   };
 };

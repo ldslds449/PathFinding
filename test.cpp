@@ -6,30 +6,39 @@
 namespace pf = pathfinding;
 using Position = pf::Position;
 
-class TestWorld final : public pf::WorldBase<TestWorld> {
+class TestWorld final : public pf::WorldBase<TestWorld, Position> {
  public:
-  template <class TVec3>
-  std::string getBlockImpl(const pf::Vec3<TVec3> &pos) {
-    int map[9][9] = {{1, 1, 1, 0, 1, 1, 1, 1, 1}, {1, 1, 0, 1, 0, 1, 1, 1, 1},
-                     {1, 1, 0, 0, 0, 0, 0, 0, 1}, {1, 0, 1, 0, 1, 0, 1, 0, 1},
-                     {1, 0, 0, 1, 0, 1, 1, 0, 1}, {1, 0, 1, 0, 0, 0, 0, 0, 1},
-                     {1, 0, 1, 1, 0, 0, 1, 0, 1}, {1, 0, 0, 0, 0, 0, 0, 0, 1},
+  virtual std::string getBlockImpl(const Position &pos) const override {
+    int map[9][9] = {{1, 1, 1, 1, 1, 1, 1, 1, 1}, 
+                     {1, 1, 0, 1, 0, 1, 1, 1, 1},
+                     {1, 1, 0, 0, 0, 0, 0, 0, 1}, 
+                     {1, 0, 1, 0, 1, 0, 1, 0, 1},
+                     {1, 0, 0, 1, 0, 1, 1, 0, 1}, 
+                     {1, 0, 1, 0, 0, 0, 0, 0, 1},
+                     {1, 0, 1, 1, 0, 0, 1, 0, 1}, 
+                     {1, 0, 0, 0, 0, 0, 0, 0, 1},
                      {1, 1, 1, 1, 1, 1, 1, 1, 1}};
     std::string name[] = {"minecraft:grass", "minecraft:lava"};
     return name[map[pos.x][pos.z]];
   }
 
-  pf::BlockType getBlockTypeImpl(const std::string &blockName) {
+  virtual pf::BlockType getBlockTypeImpl(const std::string &blockName) const override {
     return (blockName == "minecraft:lava" ? pf::BlockType::DANGER
                                           : pf::BlockType::SAFE);
+  }
+
+  virtual inline float calFallDamageImpl(
+      [[maybe_unused]] const Position &landingPos,
+      [[maybe_unused]] const typename Position::value_type &height) const override {
+    return 0.0;
   }
 };
 
 int main() {
   auto world = std::make_shared<TestWorld>();
-  pf::PathFinder finder;
+  pf::PathFinder<TestWorld, Position> finder(world);
 
-  auto path = finder.findPath<pf::eval::MaxAxisOffset>(world, Position{3, 0, 5},
+  auto path = finder.findPath<pf::eval::MaxAxisOffset>(Position{3, 0, 5},
                                                        Position{3, 0, 1});
   std::cout << (*path) << "Length: " << path->size() << std::endl;
 }

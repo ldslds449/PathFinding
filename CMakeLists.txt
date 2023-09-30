@@ -11,9 +11,11 @@ file(GLOB_RECURSE SRC_FILES CONFIGURE_DEPENDS
   "${PROJECT_SOURCE_DIR}/include/*.cpp"
 )
 set(CXX_STANDARD 17)
+set(CMAKE_CXX_FLAGS "-Wall -Wextra")
+set(CMAKE_CXX_FLAGS_DEBUG "-g")
+set(CMAKE_CXX_FLAGS_RELEASE "-O3")
 set(TARGET_NAME test)
 
 add_executable(${TARGET_NAME} ${SRC_FILES} "test.cpp")
 target_include_directories(${TARGET_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/include)
-target_compile_options(${TARGET_NAME} PUBLIC "-g")
 

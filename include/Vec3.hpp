@@ -12,7 +12,11 @@ namespace pathfinding {
 template <class T>
 class Vec3 {
  public:
+  using value_type = T;
   T x, y, z;
+
+  Vec3(T _x, T _y, T _z) : x(_x), y(_y), z(_z) {}
+  Vec3() : x(0), y(0), z(0) {}
 
   inline const T &getX() const { return x; }
   inline const T &getY() const { return y; }
@@ -27,6 +31,16 @@ class Vec3 {
   }
 
   Vec3<T> operator+(const T &val) const { return offset(val, val, val); }
+
+  Vec3<T> &operator+=(const Vec3<T> &target) {
+    adjust(target.x, target.y, target.z);
+    return *this;
+  }
+
+  Vec3<T> &operator+=(const T &val) {
+    adjust(val, val, val);
+    return *this;
+  }
 
   Vec3<T> operator-() const { return Vec3<T>{-x, -y, -z}; }
 
@@ -68,6 +82,13 @@ class Vec3 {
 
   inline Vec3<T> abs() const {
     return Vec3<T>{std::abs(x), std::abs(y), std::abs(z)};
+  }
+
+  inline T sum() const { return x + y + z; }
+
+  template <class TReturn = T>
+  inline TReturn squaredNorm() const {
+    return squaredEuclideanDist<TReturn>(*this);
   }
 
   inline T manhattanDist(const Vec3<T> &target) const {
