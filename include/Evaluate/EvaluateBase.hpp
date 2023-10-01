@@ -15,6 +15,11 @@ class EvaluateBase {
     return TDrived::evalImpl(pos, target);
   };
 
+  template <class TPos>
+  inline static U64 eval(const TPos &target) {
+    return TDrived::evalImpl(TPos(), target);
+  };
+
  private:
   EvaluateBase() {}
   friend TDrived;

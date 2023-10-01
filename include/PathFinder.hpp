@@ -9,17 +9,17 @@
 #include <utility>
 #include <vector>
 
+#include "Client/ClientBase.hpp"
 #include "Path.hpp"
 #include "Type.hpp"
 #include "Vec3.hpp"
-#include "World/WorldBase.hpp"
 
 namespace pathfinding {
 
-template <class TWorld, class TPos>
+template <class TClient>
 class PathFinder {
  public:
-  template <class TEval>
+  template <class TEval, class TPos = typename TClient::pos_type>
   std::shared_ptr<Path<TPos>> findPath(const TPos &from, const TPos &to) {
     struct Node {
       TPos pos;
@@ -34,7 +34,7 @@ class PathFinder {
 
     struct Direction {
       TPos offset;
-      U64 cost;
+      U64 cost, upCost, downCost;
     };
 
     // compare function for priority queue, sort Node from lowest cost to
@@ -54,38 +54,36 @@ class PathFinder {
     // directions for selecting neighbours
     std::vector<Direction> directions;
     for (int x = -1; x <= 1; ++x) {
-      for (int y = -1; y <= 1; ++y) {
-        for (int z = -1; z <= 1; ++z) {
-          if (x == 0 && y == 0 && z == 0) continue;
-          if (x == 0 && y == -1 && z == 0) continue;  // falling
-          TPos offset{x, y, z};
-          if (!config.moveDiagonally && offset.abs().sum() > 1) continue;
-          directions.push_back({offset, TEval::eval(TPos{0, 0, 0}, offset)});
-        }
+      for (int z = -1; z <= 1; ++z) {
+        if (x == 0 && z == 0) continue;
+        TPos offset{x, 0, z};
+        if (!config.moveDiagonally && offset.abs().sum() > 1) continue;
+        directions.push_back({offset, TEval::eval(offset),
+                              TEval::eval(offset + TPos{0, 1, 0}),
+                              TEval::eval(offset - TPos{0, 1, 0})});
       }
     }
-    const Direction fallDirection = {
-        TPos{0, -1, 0}, TEval::eval(TPos{0, 0, 0}, TPos{0, -1, 0})};
 
     // add initial state
     pq.push({from, 0, TEval::eval(from, to)});
-    infoTable[from] = {from, 0, 0,
-                       BlockType::SAFE};  // gCost and hCost are useless
+    // gCost and hCost are useless
+    infoTable[from] = {from, 0, 0, {BlockType::SAFE, BlockType::NONE}};
 
     // for loop to find a path to goal
     Node now, last;
-    bool reachChunkEdge = false;
-    while (!pq.empty() && !reachChunkEdge) {
+    bool found = false;
+    while (!pq.empty()) {
       Node pre = now;
       now = pq.top();
       pq.pop();
       if (now.pos == to) {
         last = now;
+        found = true;
         break;
       }
       auto &posInfo = infoTable[now.pos];
       // check if the block reachs the edge of the chunk
-      if (posInfo.type == BlockType::UNKNOWN) {
+      if (posInfo.type.is(BlockType::UNKNOWN)) {
         last = pre;
         break;
       }
@@ -93,46 +91,65 @@ class PathFinder {
       if (now.gCost > posInfo.gCost) continue;
 
       // add neighbour
-      for (const Direction &dir : directions) {
-        TPos newPos = now.pos + dir.offset;
-        U64 newGCost = now.gCost + dir.cost;
+      auto addNewPos = [&](const TPos &newPos, const TPos &parent,
+                           const U64 &gCost, const BlockType &btype) {
         auto found_it = infoTable.find(newPos);
-
-        // the neighbour was added before
         if (found_it != infoTable.end()) {
           U64 &PreGCost = found_it->second.gCost;
           // compare the gCost and reserve the one with lower cost
-          if (newGCost < PreGCost) {
-            found_it->second.gCost = newGCost;
-            found_it->second.parent = now.pos;
-            pq.push({newPos, newGCost, now.hCost});  // lazy deletion
+          if (gCost < PreGCost) {
+            found_it->second.parent = parent;
+            found_it->second.gCost = gCost;
+            pq.push({newPos, gCost, found_it->second.hCost});  // lazy deletion
           }
-        } else {  // a new neighbour
-          BlockType btype = world->getBlockType(newPos);
+        } else {
+          U64 hCost = TEval::eval(newPos, to);
+          pq.push({newPos, gCost, hCost});
+          infoTable[newPos] = {parent, gCost, hCost, btype};
+        }
+      };
 
-          // check the block type
-          if (btype == BlockType::DANGER) {
-            continue;
-          } else if (btype == BlockType::SAFE ||
-                     btype == BlockType::UNKNOWN) {  // add to queue
-            U64 newHCost = TEval::eval(newPos, to);
-            pq.push({newPos, newGCost, newHCost});
-            infoTable[newPos] = {now.pos, newGCost, newHCost, btype};
-          } else if (btype == BlockType::AIR) {  // find the landing position
-            TPos top = newPos;
-            do {
-              // falling
-              newPos += fallDirection.offset;
-              newGCost += fallDirection.cost;
-              btype = world->getBlockType(newPos);
-            } while (btype == BlockType::AIR);
-            if (btype != BlockType::DANGER &&
-                world->calFallDamage(newPos, (top - newPos).y) <=
-                    config.fallingDamageTolerance) {
-              U64 newHCost = TEval::eval(newPos, to);
-              pq.push({newPos, newGCost, newHCost});
-              infoTable[newPos] = {now.pos, newGCost, newHCost, btype};
-            }
+      // check jump
+      bool canJump =
+          !client->getBlockType(now.pos + TPos{0, 3, 0}).is(BlockType::AIR);
+
+      // find neighbour
+      for (const Direction &dir : directions) {
+        TPos floorPos = now.pos + dir.offset;
+        BlockType floorType = client->getBlockType(floorPos);
+
+        // up
+        TPos up1Pos = floorPos + TPos{0, 1, 0}, up2Pos = up1Pos + TPos{0, 1, 0},
+             up3Pos = up2Pos + TPos{0, 1, 0};
+        BlockType up1Type = client->getBlockType(up1Pos),
+                  up2Type = client->getBlockType(up2Pos),
+                  up3Type = client->getBlockType(up3Pos);
+        if (up1Type.is(BlockType::AIR) && up2Type.is(BlockType::AIR) &&
+            floorType.is(BlockType::SAFE)) {
+          addNewPos(floorPos, now.pos, now.gCost + dir.cost, floorType);
+        }
+        if (up2Type.is(BlockType::AIR) && up3Type.is(BlockType::AIR) &&
+            up1Type.is(BlockType::SAFE) && canJump) {
+          addNewPos(up1Pos, now.pos, now.gCost + dir.upCost, up1Type);
+        }
+
+        // down
+        if (floorType.is(BlockType::AIR) && up1Type.is(BlockType::AIR) &&
+            up2Type.is(BlockType::SAFE)) {
+          TPos landingPos = floorPos;
+          BlockType landingType = client->getBlockType(landingPos);
+          U64 cost = 0;
+          while (landingType.is(BlockType::AIR) ||
+                 landingType.is(BlockType::FORCE_DOWN)) {
+            // falling
+            landingPos -= TPos{0, 1, 0};
+            landingType = client->getBlockType(landingPos);
+            cost += TEval::eval(TPos{0, 1, 0});
+          }
+          if (landingType.is(BlockType::DANGER) &&
+              client->calFallDamage(landingPos, (floorPos - landingPos).y) <=
+                  config.fallingDamageTolerance) {
+            addNewPos(landingPos, now.pos, now.gCost + cost, landingType);
           }
         }
       }
@@ -140,14 +157,16 @@ class PathFinder {
 
     // back tracking to get the whole path
     std::shared_ptr<Path<TPos>> path = std::make_shared<Path<TPos>>();
-    TPos nowPos = now.pos;
-    while (true) {
-      path->add(nowPos);
-      TPos &newPos = infoTable[nowPos].parent;
-      if (newPos == nowPos) break;
-      nowPos = newPos;
+    if (found) {
+      TPos nowPos = last.pos;
+      while (true) {
+        path->add(nowPos);
+        TPos &newPos = infoTable[nowPos].parent;
+        if (newPos == nowPos) break;
+        nowPos = newPos;
+      }
+      path->reverse();
     }
-    path->reverse();
 
     return path;
   }
@@ -157,12 +176,12 @@ class PathFinder {
     float fallingDamageTolerance = 0.0;
   };
 
-  PathFinder(std::shared_ptr<TWorld> _world, pathFinderConfig &_config)
-      : world(_world), config(_config) {}
-  PathFinder(std::shared_ptr<TWorld> _world) : world(_world) {}
+  PathFinder(std::shared_ptr<TClient> _client, pathFinderConfig &_config)
+      : client(_client), config(_config) {}
+  PathFinder(std::shared_ptr<TClient> _client) : client(_client) {}
 
  private:
-  std::shared_ptr<TWorld> world;
+  std::shared_ptr<TClient> client;
   pathFinderConfig config;
 };
 

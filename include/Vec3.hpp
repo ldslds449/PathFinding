@@ -48,6 +48,16 @@ class Vec3 {
     return offset(-target.x, -target.y, -target.z);
   }
 
+  Vec3<T> &operator-=(const Vec3<T> &target) {
+    adjust(-target.x, -target.y, -target.z);
+    return *this;
+  }
+
+  Vec3<T> &operator-=(const T &val) {
+    adjust(-val, -val, -val);
+    return *this;
+  }
+
   Vec3<T> operator-(const T &val) const { return offset(-val, -val, -val); }
 
   Vec3<T> operator*(const Vec3<T> &target) const {

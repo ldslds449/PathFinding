@@ -1,16 +1,20 @@
-#ifndef PATHFINDING_WORLD_WORLDBASE_H_
-#define PATHFINDING_WORLD_WORLDBASE_H_
+#ifndef PATHFINDING_CLIENT_CLIENTBASE_H_
+#define PATHFINDING_CLIENT_CLIENTBASE_H_
 
 #include <string>
+#include <vector>
+#include <utility>
 
 #include "BlockType.hpp"
-#include "Vec3.hpp"
+#include "Evaluate/EvaluateBase.hpp"
 
 namespace pathfinding {
 
 template <class TDrived, class TPos>
-class WorldBase {
+class ClientBase {
  public:
+  using pos_type = TPos;
+
   inline std::string getBlock(const TPos &pos) const {
     return static_cast<const TDrived *>(this)->getBlockImpl(pos);
   };
@@ -25,22 +29,20 @@ class WorldBase {
     return static_cast<const TDrived *>(this)->getBlockTypeImpl(blockName);
   };
 
-  virtual inline BlockType getBlockTypeImpl(const std::string &blockName) const = 0;
+  virtual inline BlockType getBlockTypeImpl(
+      const std::string &blockName) const = 0;
 
   inline float calFallDamage(const TPos &landingPos,
                              const typename TPos::value_type &height) const {
-    return static_cast<const TDrived *>(this)->calFallDamageImpl(landingPos, height);
+    return static_cast<const TDrived *>(this)->calFallDamageImpl(landingPos,
+                                                                 height);
   };
 
   virtual inline float calFallDamageImpl(
       const TPos &landingPos,
       const typename TPos::value_type &height) const = 0;
-
- private:
-  WorldBase() {}
-  friend TDrived;
 };
 
 }  // namespace pathfinding
 
-#endif  // PATHFINDING_WORLD_WORLDBASE_H_
+#endif  // PATHFINDING_CLIENT_CLIENTBASE_H_
