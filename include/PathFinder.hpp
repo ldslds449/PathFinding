@@ -1,6 +1,7 @@
 #ifndef PATHFINDING_PATHFINDING_H_
 #define PATHFINDING_PATHFINDING_H_
 
+#include <chrono>
 #include <deque>
 #include <functional>
 #include <memory>
@@ -57,10 +58,12 @@ class PathFinder {
       for (int z = -1; z <= 1; ++z) {
         if (x == 0 && z == 0) continue;
         TPos offset{x, 0, z};
-        if (!config.moveDiagonally && offset.abs().sum() > 1) continue;
-        directions.push_back({offset, TEval::eval(offset),
-                              TEval::eval(offset + TPos{0, 1, 0}),
-                              TEval::eval(offset - TPos{0, 1, 0})});
+        if (!config.moveDiagonally && offset.abs().getXZ().sum() > 1) continue;
+        directions.push_back(
+            {offset,
+             static_cast<U64>(offset.squaredNorm()),  // TEval::eval(offset)
+             TEval::eval(offset + TPos{0, 1, 0}),
+             TEval::eval(offset - TPos{0, 1, 0})});
       }
     }
 
@@ -84,6 +87,7 @@ class PathFinder {
       auto &posInfo = infoTable[now.pos];
       // check if the block reachs the edge of the chunk
       if (posInfo.type.is(BlockType::UNKNOWN)) {
+        found = true;
         last = pre;
         break;
       }
@@ -111,31 +115,56 @@ class PathFinder {
 
       // check jump
       bool canJump =
-          !client->getBlockType(now.pos + TPos{0, 3, 0}).is(BlockType::AIR);
+          client->getBlockType(now.pos + TPos{0, 3, 0}).is(BlockType::AIR);
 
       // find neighbour
       for (const Direction &dir : directions) {
+        const bool isDiagonal = dir.offset.getXZ().abs().sum() > 1;
         TPos floorPos = now.pos + dir.offset;
         BlockType floorType = client->getBlockType(floorPos);
 
         // up
         TPos up1Pos = floorPos + TPos{0, 1, 0}, up2Pos = up1Pos + TPos{0, 1, 0},
              up3Pos = up2Pos + TPos{0, 1, 0};
+        TPos upZ1Pos = now.pos + TPos{0, 1, dir.offset.z},
+             upX1Pos = now.pos + TPos{dir.offset.x, 1, 0},
+             upZ2Pos = upZ1Pos + TPos{0, 1, 0},
+             upX2Pos = upX1Pos + TPos{0, 1, 0},
+             upZ3Pos = upZ2Pos + TPos{0, 1, 0},
+             upX3Pos = upX2Pos + TPos{0, 1, 0};
         BlockType up1Type = client->getBlockType(up1Pos),
                   up2Type = client->getBlockType(up2Pos),
                   up3Type = client->getBlockType(up3Pos);
+        BlockType upZ1Type = client->getBlockType(upZ1Pos),
+                  upX1Type = client->getBlockType(upX1Pos),
+                  upZ2Type = client->getBlockType(upZ2Pos),
+                  upX2Type = client->getBlockType(upX2Pos),
+                  upZ3Type = client->getBlockType(upZ3Pos),
+                  upX3Type = client->getBlockType(upX3Pos);
         if (up1Type.is(BlockType::AIR) && up2Type.is(BlockType::AIR) &&
             floorType.is(BlockType::SAFE)) {
-          addNewPos(floorPos, now.pos, now.gCost + dir.cost, floorType);
+          if (!isDiagonal ||
+              (upZ1Type.is(BlockType::AIR) && upX1Type.is(BlockType::AIR) &&
+               upZ2Type.is(BlockType::AIR) && upX2Type.is(BlockType::AIR))) {
+            addNewPos(floorPos, now.pos, now.gCost + dir.cost, floorType);
+          }
         }
         if (up2Type.is(BlockType::AIR) && up3Type.is(BlockType::AIR) &&
             up1Type.is(BlockType::SAFE) && canJump) {
-          addNewPos(up1Pos, now.pos, now.gCost + dir.upCost, up1Type);
+          if (!isDiagonal ||
+              (upZ2Type.is(BlockType::AIR) && upX2Type.is(BlockType::AIR) &&
+               upZ3Type.is(BlockType::AIR) && upX3Type.is(BlockType::AIR))) {
+            addNewPos(up1Pos, now.pos, now.gCost + dir.upCost, up1Type);
+          }
         }
 
         // down
-        if (floorType.is(BlockType::AIR) && up1Type.is(BlockType::AIR) &&
-            up2Type.is(BlockType::SAFE)) {
+        if (floorType.is(BlockType::AIR) &&
+            ((!isDiagonal && up1Type.is(BlockType::AIR) &&
+              up2Type.is(BlockType::AIR)) ||
+             (isDiagonal && upZ1Type.is(BlockType::AIR) &&
+              upX1Type.is(BlockType::AIR) && upZ2Type.is(BlockType::AIR) &&
+              upX2Type.is(BlockType::AIR)))) {
           TPos landingPos = floorPos;
           BlockType landingType = client->getBlockType(landingPos);
           U64 cost = 0;
@@ -146,7 +175,7 @@ class PathFinder {
             landingType = client->getBlockType(landingPos);
             cost += TEval::eval(TPos{0, 1, 0});
           }
-          if (landingType.is(BlockType::DANGER) &&
+          if (!landingType.is(BlockType::DANGER) &&
               client->calFallDamage(landingPos, (floorPos - landingPos).y) <=
                   config.fallingDamageTolerance) {
             addNewPos(landingPos, now.pos, now.gCost + cost, landingType);
@@ -176,7 +205,7 @@ class PathFinder {
     float fallingDamageTolerance = 0.0;
   };
 
-  PathFinder(std::shared_ptr<TClient> _client, pathFinderConfig &_config)
+  PathFinder(std::shared_ptr<TClient> _client, const pathFinderConfig &_config)
       : client(_client), config(_config) {}
   PathFinder(std::shared_ptr<TClient> _client) : client(_client) {}
 

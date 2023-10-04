@@ -18,6 +18,7 @@ class SimpleClient : public ClientBase<TDrived, TPos> {
       const std::string &blockName) const override {
     const BlockType defaultBlockType = {BlockType::SAFE, BlockType::NONE};
     const std::unordered_map<std::string, BlockType> blockTable = {
+        {"", {BlockType::UNKNOWN, BlockType::NONE}},
         {"minecraft:air", {BlockType::AIR, BlockType::FORCE_DOWN}},
         {"minecraft:lava", {BlockType::DANGER, BlockType::FORCE_DOWN}},
         {"minecraft:water", {BlockType::DANGER, BlockType::FORCE_DOWN}},

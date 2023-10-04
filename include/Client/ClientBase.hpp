@@ -2,8 +2,8 @@
 #define PATHFINDING_CLIENT_CLIENTBASE_H_
 
 #include <string>
-#include <vector>
 #include <utility>
+#include <vector>
 
 #include "BlockType.hpp"
 #include "Evaluate/EvaluateBase.hpp"
@@ -41,6 +41,12 @@ class ClientBase {
   virtual inline float calFallDamageImpl(
       const TPos &landingPos,
       const typename TPos::value_type &height) const = 0;
+
+  inline bool move(const TPos &offset) {
+    return static_cast<TDrived *>(this)->moveImpl(offset);
+  };
+
+  virtual inline bool moveImpl(const TPos &offset) = 0;
 };
 
 }  // namespace pathfinding

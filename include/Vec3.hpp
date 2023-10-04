@@ -18,9 +18,16 @@ class Vec3 {
   Vec3(T _x, T _y, T _z) : x(_x), y(_y), z(_z) {}
   Vec3() : x(0), y(0), z(0) {}
 
+  template <class Tnew>
+  Vec3(const Vec3<Tnew> &vec) : x(vec.x), y(vec.y), z(vec.z) {}
+
   inline const T &getX() const { return x; }
   inline const T &getY() const { return y; }
   inline const T &getZ() const { return z; }
+
+  inline Vec3<T> getXY() const { return Vec3<T>{x, y, 0}; }
+  inline Vec3<T> getXZ() const { return Vec3<T>{x, 0, z}; }
+  inline Vec3<T> getYZ() const { return Vec3<T>{0, y, z}; }
 
   bool operator==(const Vec3<T> &target) const {
     return (x == target.x) && (y == target.y) && (z == target.z);
@@ -94,11 +101,19 @@ class Vec3 {
     return Vec3<T>{std::abs(x), std::abs(y), std::abs(z)};
   }
 
+  inline Vec3<T> floor() const {
+    return Vec3<T>{std::floor(x), std::floor(y), std::floor(z)};
+  }
+
+  inline Vec3<T> ceil() const {
+    return Vec3<T>{std::ceil(x), std::ceil(y), std::ceil(z)};
+  }
+
   inline T sum() const { return x + y + z; }
 
   template <class TReturn = T>
   inline TReturn squaredNorm() const {
-    return squaredEuclideanDist<TReturn>(*this);
+    return squaredEuclideanDist<TReturn>({0, 0, 0});
   }
 
   inline T manhattanDist(const Vec3<T> &target) const {
