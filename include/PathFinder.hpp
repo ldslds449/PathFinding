@@ -4,6 +4,7 @@
 #include <chrono>
 #include <deque>
 #include <functional>
+#include <iostream>
 #include <memory>
 #include <queue>
 #include <unordered_map>
@@ -198,6 +199,19 @@ class PathFinder {
     }
 
     return path;
+  }
+
+  template <class TPos = typename TClient::pos_type>
+  void Move(const std::shared_ptr<Path<TPos>> &path) {
+    auto &pathVec = path->get();
+    // skip first position
+    for (int i = 1; i < pathVec.size(); ++i) {
+      const TPos &prevPos = pathVec[i - 1], &newPos = pathVec[i],
+                 diffPos = newPos - prevPos;
+      std::cout << "From: " << prevPos << " To: " << newPos
+                << " Diff: " << diffPos << std::endl;
+      client->move(diffPos);
+    }
   }
 
   struct pathFinderConfig {
