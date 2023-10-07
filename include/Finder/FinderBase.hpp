@@ -39,12 +39,31 @@ class FinderBase {
 
   inline void findPathAndGo(const TPos &from, const goal::GoalBase<TPos> &goal,
                             const U64 &timeLimit = 0, const int &retry = 10) {
+    auto run =
+        [&](const TPos &nowFrom,
+            const goal::GoalBase<TPos> &nowGoal) -> std::pair<bool, TPos> {
+      auto t1 = std::chrono::steady_clock::now();
+      auto path = findPath(nowFrom, nowGoal, timeLimit);
+      auto t2 = std::chrono::steady_clock::now();
+
+      std::cout << (*path) << "Length: " << path->size() << std::endl;
+      std::cout << "Took: "
+                << std::chrono::duration_cast<std::chrono::milliseconds>(t2 -
+                                                                         t1)
+                       .count()
+                << "ms" << std::endl;
+
+      if (path->size() == 0) return {false, TPos()};
+      std::cout << "Executing...\n";
+      go(path);
+      std::cout << "Done\n";
+      return {true, (*path)[path->size() - 1]};
+    };
+
     TPos lastPos = from, nowGoalPos;
     const int step = 2 * 16;  // 2 chunks
 
     for (int i = 0; i < retry; ++i) {
-      std::shared_ptr<const goal::GoalBase<TPos>> nowGoal;
-
       // the goal is in a unload chunk
       if (getBlockType(goal.getGoalPosition()).is(BlockType::UNKNOWN)) {
         const TPos vec = goal.getGoalPosition() - lastPos;
@@ -59,29 +78,13 @@ class FinderBase {
                   << " is in a unload chunk, try to get closer " << nowGoalPos
                   << " to load the chunk." << std::endl;
 
-        nowGoal =
-            std::make_shared<const goal::RangeGoal<TPos>>(nowGoalPos, 5, -1, 5);
+        auto result = run(lastPos, goal::RangeGoal<TPos>(nowGoalPos, 5, -1, 5));
+        if (!result.first) break;
+        lastPos = result.second;
       } else {
-        nowGoal = std::shared_ptr<const goal::GoalBase<TPos>>(&goal);
+        run(lastPos, goal);
+        break;
       }
-
-      auto t1 = std::chrono::steady_clock::now();
-      auto path = findPath(lastPos, *nowGoal, timeLimit);
-      auto t2 = std::chrono::steady_clock::now();
-
-      std::cout << (*path) << "Length: " << path->size() << std::endl;
-      std::cout << "Took: "
-                << std::chrono::duration_cast<std::chrono::milliseconds>(t2 -
-                                                                         t1)
-                       .count()
-                << "ms" << std::endl;
-
-      if (path->size() == 0) break;
-      std::cout << "Executing...\n";
-      go(path);
-      std::cout << "Done\n";
-
-      lastPos = (*path)[path->size() - 1];
     }
   }
 
