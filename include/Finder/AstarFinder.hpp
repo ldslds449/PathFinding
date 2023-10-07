@@ -1,46 +1,57 @@
-#ifndef PATHFINDING_PATHFINDING_H_
-#define PATHFINDING_PATHFINDING_H_
+#ifndef PATHFINDING_FINDER_ASTARFINDER_H_
+#define PATHFINDING_FINDER_ASTARFINDER_H_
 
 #include <chrono>
 #include <deque>
-#include <functional>
-#include <iostream>
-#include <memory>
 #include <queue>
-#include <unordered_map>
-#include <utility>
-#include <vector>
 
-#include "Client/ClientBase.hpp"
-#include "Path.hpp"
+#include "Evaluate/Evaluate.hpp"
+#include "Finder/FinderBase.hpp"
 #include "Type.hpp"
 #include "Vec3.hpp"
 
 namespace pathfinding {
 
-template <class TClient>
-class PathFinder {
+template <class TDrived, class TEstimateEval = eval::Manhattan,
+          class TEdgeEval = eval::Euclidean, class TPos = Position>
+class AstarFinder : public FinderBase<AstarFinder<TDrived>, TPos> {
  public:
-  template <class TEval, class TPos = typename TClient::pos_type>
-  std::shared_ptr<Path<TPos>> findPath(const TPos &from, const TPos &to) {
+  virtual std::shared_ptr<Path<TPos>> findPathImpl(
+      const TPos &from, const goal::GoalBase<TPos> &goal,
+      const U64 &timeLimit) const override {
+    // a node in A*
     struct Node {
       TPos pos;
       U64 gCost, hCost;
     };
 
+    // record the information of a node
     struct PosInfo {
       TPos parent;
       U64 gCost, hCost;  // the lowest gCost, hCost of key
       BlockType type;
     };
 
+    // direction to generate next node
     struct Direction {
       TPos offset;
-      U64 cost, upCost, downCost;
+      U64 cost, upCost;
     };
 
-    // compare function for priority queue, sort Node from lowest cost to
-    // largest cost
+    const TPos &to = goal.getGoalPosition();
+
+    // time limit
+    auto startTime = std::chrono::steady_clock::now();
+    auto isTimeUp = [&]() -> bool {
+      if (timeLimit == 0) return false;
+      auto now = std::chrono::steady_clock::now();
+      return std::chrono::duration_cast<std::chrono::milliseconds>(now -
+                                                                   startTime)
+                 .count() >= timeLimit;
+    };
+
+    // compare function for priority queue, sort Node
+    // from lowest cost to largest cost
     auto pq_cmp = [](const Node &a, const Node &b) {
       return (a.gCost + a.hCost) > (b.gCost + b.hCost);
     };
@@ -57,30 +68,29 @@ class PathFinder {
     std::vector<Direction> directions;
     for (int x = -1; x <= 1; ++x) {
       for (int z = -1; z <= 1; ++z) {
-        if (x == 0 && z == 0) continue;
+        if (x == 0 && z == 0) continue;  // no move
         TPos offset{x, 0, z};
         if (!config.moveDiagonally && offset.abs().getXZ().sum() > 1) continue;
-        directions.push_back(
-            {offset,
-             static_cast<U64>(offset.squaredNorm()),  // TEval::eval(offset)
-             TEval::eval(offset + TPos{0, 1, 0}),
-             TEval::eval(offset - TPos{0, 1, 0})});
+        directions.push_back({offset,
+                              TEdgeEval::eval(offset),  // squared euclidean
+                              TEdgeEval::eval(offset + TPos{0, 1, 0})});
       }
     }
+    const U64 fallCost = TEdgeEval::eval(TPos{0, 1, 0});
 
     // add initial state
-    pq.push({from, 0, TEval::eval(from, to)});
+    pq.push({from, 0, TEstimateEval::eval(from, to)});
     // gCost and hCost are useless
     infoTable[from] = {from, 0, 0, {BlockType::SAFE, BlockType::NONE}};
 
     // for loop to find a path to goal
     Node now, last;
     bool found = false;
-    while (!pq.empty()) {
+    while (!pq.empty() && !isTimeUp()) {
       Node pre = now;
       now = pq.top();
       pq.pop();
-      if (now.pos == to) {
+      if (goal.isGoal(now.pos)) {
         last = now;
         found = true;
         break;
@@ -108,7 +118,7 @@ class PathFinder {
             pq.push({newPos, gCost, found_it->second.hCost});  // lazy deletion
           }
         } else {
-          U64 hCost = TEval::eval(newPos, to);
+          U64 hCost = TEstimateEval::eval(newPos, to);
           pq.push({newPos, gCost, hCost});
           infoTable[newPos] = {parent, gCost, hCost, btype};
         }
@@ -116,13 +126,13 @@ class PathFinder {
 
       // check jump
       bool canJump =
-          client->getBlockType(now.pos + TPos{0, 3, 0}).is(BlockType::AIR);
+          this->getBlockType(now.pos + TPos{0, 3, 0}).is(BlockType::AIR);
 
       // find neighbour
       for (const Direction &dir : directions) {
         const bool isDiagonal = dir.offset.getXZ().abs().sum() > 1;
         TPos floorPos = now.pos + dir.offset;
-        BlockType floorType = client->getBlockType(floorPos);
+        BlockType floorType = this->getBlockType(floorPos);
 
         // up
         TPos up1Pos = floorPos + TPos{0, 1, 0}, up2Pos = up1Pos + TPos{0, 1, 0},
@@ -133,15 +143,15 @@ class PathFinder {
              upX2Pos = upX1Pos + TPos{0, 1, 0},
              upZ3Pos = upZ2Pos + TPos{0, 1, 0},
              upX3Pos = upX2Pos + TPos{0, 1, 0};
-        BlockType up1Type = client->getBlockType(up1Pos),
-                  up2Type = client->getBlockType(up2Pos),
-                  up3Type = client->getBlockType(up3Pos);
-        BlockType upZ1Type = client->getBlockType(upZ1Pos),
-                  upX1Type = client->getBlockType(upX1Pos),
-                  upZ2Type = client->getBlockType(upZ2Pos),
-                  upX2Type = client->getBlockType(upX2Pos),
-                  upZ3Type = client->getBlockType(upZ3Pos),
-                  upX3Type = client->getBlockType(upX3Pos);
+        BlockType up1Type = this->getBlockType(up1Pos),
+                  up2Type = this->getBlockType(up2Pos),
+                  up3Type = this->getBlockType(up3Pos);
+        BlockType upZ1Type = this->getBlockType(upZ1Pos),
+                  upX1Type = this->getBlockType(upX1Pos),
+                  upZ2Type = this->getBlockType(upZ2Pos),
+                  upX2Type = this->getBlockType(upX2Pos),
+                  upZ3Type = this->getBlockType(upZ3Pos),
+                  upX3Type = this->getBlockType(upX3Pos);
         if (up1Type.is(BlockType::AIR) && up2Type.is(BlockType::AIR) &&
             floorType.is(BlockType::SAFE)) {
           if (!isDiagonal ||
@@ -167,17 +177,17 @@ class PathFinder {
               upX1Type.is(BlockType::AIR) && upZ2Type.is(BlockType::AIR) &&
               upX2Type.is(BlockType::AIR)))) {
           TPos landingPos = floorPos;
-          BlockType landingType = client->getBlockType(landingPos);
+          BlockType landingType = this->getBlockType(landingPos);
           U64 cost = 0;
           while (landingType.is(BlockType::AIR) ||
                  landingType.is(BlockType::FORCE_DOWN)) {
             // falling
             landingPos -= TPos{0, 1, 0};
-            landingType = client->getBlockType(landingPos);
-            cost += TEval::eval(TPos{0, 1, 0});
+            landingType = this->getBlockType(landingPos);
+            cost += fallCost;
           }
           if (!landingType.is(BlockType::DANGER) &&
-              client->calFallDamage(landingPos, (floorPos - landingPos).y) <=
+              this->getFallDamage(landingPos, (floorPos - landingPos).y) <=
                   config.fallingDamageTolerance) {
             addNewPos(landingPos, now.pos, now.gCost + cost, landingType);
           }
@@ -201,33 +211,18 @@ class PathFinder {
     return path;
   }
 
-  template <class TPos = typename TClient::pos_type>
-  void Move(const std::shared_ptr<Path<TPos>> &path) {
-    auto &pathVec = path->get();
-    // skip first position
-    for (int i = 1; i < pathVec.size(); ++i) {
-      const TPos &prevPos = pathVec[i - 1], &newPos = pathVec[i],
-                 diffPos = newPos - prevPos;
-      std::cout << "From: " << prevPos << " To: " << newPos
-                << " Diff: " << diffPos << std::endl;
-      client->move(diffPos);
-    }
-  }
-
-  struct pathFinderConfig {
+  struct finderConfig {
     bool moveDiagonally = true;
     float fallingDamageTolerance = 0.0;
   };
 
-  PathFinder(std::shared_ptr<TClient> _client, const pathFinderConfig &_config)
-      : client(_client), config(_config) {}
-  PathFinder(std::shared_ptr<TClient> _client) : client(_client) {}
+  AstarFinder() = default;
+  AstarFinder(const finderConfig &_config) : config(_config) {}
 
  private:
-  std::shared_ptr<TClient> client;
-  pathFinderConfig config;
+  finderConfig config;
 };
 
 }  // namespace pathfinding
 
-#endif  // PATHFINDING_PATHFINDING_H_
+#endif  // PATHFINDING_FINDER_ASTARFINDER_H_

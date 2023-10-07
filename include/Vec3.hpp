@@ -1,7 +1,7 @@
 #ifndef PATHFINDING_VEC3_H_
 #define PATHFINDING_VEC3_H_
 
-#include <algorithm>
+#include <cmath>
 #include <functional>
 #include <ostream>
 
