@@ -1,6 +1,7 @@
 #ifndef PATHFINDING_FINDER_FINDERBASE_H_
 #define PATHFINDING_FINDER_FINDERBASE_H_
 
+#include <chrono>
 #include <cmath>
 #include <iostream>
 #include <memory>
@@ -8,7 +9,7 @@
 #include <string>
 
 #include "BlockType.hpp"
-#include "Goal/GoalBase.hpp"
+#include "Goal/Goal.hpp"
 #include "Path.hpp"
 #include "Vec3.hpp"
 
@@ -38,11 +39,48 @@ class FinderBase {
 
   inline void findPathAndGo(const TPos &from, const goal::GoalBase<TPos> &goal,
                             const U64 &timeLimit = 0, const int &retry = 10) {
-    TPos lastPos = from;
+    TPos lastPos = from, nowGoalPos;
+    const int step = 2 * 16;  // 2 chunks
+
     for (int i = 0; i < retry; ++i) {
-      auto path = findPath(lastPos, goal, timeLimit);
+      std::shared_ptr<const goal::GoalBase<TPos>> nowGoal;
+
+      // the goal is in a unload chunk
+      if (getBlockType(goal.getGoalPosition()).is(BlockType::UNKNOWN)) {
+        const TPos vec = goal.getGoalPosition() - lastPos;
+        const auto vecUnit =
+            static_cast<const Vec3<double>>(vec) / std::sqrt(vec.squaredNorm());
+
+        nowGoalPos.x = lastPos.x + std::floor(vecUnit.x * step);
+        nowGoalPos.y = lastPos.y;
+        nowGoalPos.z = lastPos.z + std::floor(vecUnit.z * step);
+
+        std::cout << "Position " << goal.getGoalPosition()
+                  << " is in a unload chunk, try to get closer " << nowGoalPos
+                  << " to load the chunk." << std::endl;
+
+        nowGoal =
+            std::make_shared<const goal::RangeGoal<TPos>>(nowGoalPos, 5, -1, 5);
+      } else {
+        nowGoal = std::shared_ptr<const goal::GoalBase<TPos>>(&goal);
+      }
+
+      auto t1 = std::chrono::steady_clock::now();
+      auto path = findPath(lastPos, *nowGoal, timeLimit);
+      auto t2 = std::chrono::steady_clock::now();
+
+      std::cout << (*path) << "Length: " << path->size() << std::endl;
+      std::cout << "Took: "
+                << std::chrono::duration_cast<std::chrono::milliseconds>(t2 -
+                                                                         t1)
+                       .count()
+                << "ms" << std::endl;
+
       if (path->size() == 0) break;
+      std::cout << "Executing...\n";
       go(path);
+      std::cout << "Done\n";
+
       lastPos = (*path)[path->size() - 1];
     }
   }

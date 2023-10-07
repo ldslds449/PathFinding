@@ -2,7 +2,6 @@
 #define PATHFINDING_FINDER_ASTARFINDER_H_
 
 #include <chrono>
-#include <deque>
 #include <queue>
 
 #include "Evaluate/Evaluate.hpp"
@@ -55,8 +54,7 @@ class AstarFinder : public FinderBase<AstarFinder<TDrived>, TPos> {
     auto pq_cmp = [](const Node &a, const Node &b) {
       return (a.gCost + a.hCost) > (b.gCost + b.hCost);
     };
-    std::priority_queue<Node, std::deque<Node>, decltype(pq_cmp)> pq(pq_cmp);
-    U64 knownCountInPQ = 0;
+    std::priority_queue<Node, std::vector<Node>, decltype(pq_cmp)> pq(pq_cmp);
 
     // hash function for unordered map
     auto map_hash = [](const TPos &a) { return a.hash(); };
@@ -81,7 +79,6 @@ class AstarFinder : public FinderBase<AstarFinder<TDrived>, TPos> {
 
     // add initial state
     pq.push({from, 0, TEstimateEval::eval(from, to)});
-    knownCountInPQ++;
     // gCost and hCost are useless
     infoTable[from] = {from, 0, 0, {BlockType::SAFE, BlockType::NONE}};
 
@@ -100,11 +97,9 @@ class AstarFinder : public FinderBase<AstarFinder<TDrived>, TPos> {
       auto &posInfo = infoTable[now.pos];
       // check if the block reachs the edge of the chunk
       if (posInfo.type.is(BlockType::UNKNOWN)) {
-        last = pre;
-        found = (knownCountInPQ > 0);
+        // last = pre;
+        found = false;
         break;
-      } else {
-        knownCountInPQ--;
       }
       // check if this node has visited before
       if (now.gCost > posInfo.gCost) continue;
@@ -125,9 +120,6 @@ class AstarFinder : public FinderBase<AstarFinder<TDrived>, TPos> {
           U64 hCost = TEstimateEval::eval(newPos, to);
           pq.push({newPos, gCost, hCost});
           infoTable[newPos] = {parent, gCost, hCost, btype};
-        }
-        if (!btype.is(BlockType::UNKNOWN)) {
-          knownCountInPQ++;
         }
       };
 
