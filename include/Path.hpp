@@ -25,6 +25,8 @@ class Path {
   inline void reverse() { std::reverse(nodes.begin(), nodes.end()); }
   inline std::size_t size() const { return nodes.size(); }
   inline const std::vector<TPos> &get() const { return nodes; }
+
+  TPos &operator[](const std::size_t &idx) { return nodes[idx]; }
 };
 
 }  // namespace pathfinding

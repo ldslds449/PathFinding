@@ -36,6 +36,17 @@ class FinderBase {
     return goImpl(path);
   }
 
+  inline void findPathAndGo(const TPos &from, const goal::GoalBase<TPos> &goal,
+                            const U64 &timeLimit = 0, const int &retry = 10) {
+    TPos lastPos = from;
+    for (int i = 0; i < retry; ++i) {
+      auto path = findPath(lastPos, goal, timeLimit);
+      if (path->size() == 0) break;
+      go(path);
+      lastPos = (*path)[path->size() - 1];
+    }
+  }
+
   /*
    * Ask the player to move
    */

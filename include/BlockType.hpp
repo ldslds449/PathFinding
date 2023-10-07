@@ -17,9 +17,9 @@ class BlockType {
     NONE
   };
 
-  inline bool is(const Property &flag) { return property == flag; }
+  inline bool is(const Property &flag) const { return property == flag; }
 
-  inline bool is(const Ability &flag) { return ability == flag; }
+  inline bool is(const Ability &flag) const { return ability == flag; }
 
   BlockType(const Property &_p, const Ability &_a)
       : property(_p), ability(_a) {}

@@ -33,6 +33,13 @@ class Vec3 {
     return (x == target.x) && (y == target.y) && (z == target.z);
   }
 
+  Vec3<T> &operator=(const Vec3<T> &target) {
+    x = target.x;
+    y = target.y;
+    z = target.z;
+    return *this;
+  }
+
   Vec3<T> operator+(const Vec3<T> &target) const {
     return offset(target.x, target.y, target.z);
   }

@@ -56,6 +56,7 @@ class AstarFinder : public FinderBase<AstarFinder<TDrived>, TPos> {
       return (a.gCost + a.hCost) > (b.gCost + b.hCost);
     };
     std::priority_queue<Node, std::deque<Node>, decltype(pq_cmp)> pq(pq_cmp);
+    U64 knownCountInPQ = 0;
 
     // hash function for unordered map
     auto map_hash = [](const TPos &a) { return a.hash(); };
@@ -80,6 +81,7 @@ class AstarFinder : public FinderBase<AstarFinder<TDrived>, TPos> {
 
     // add initial state
     pq.push({from, 0, TEstimateEval::eval(from, to)});
+    knownCountInPQ++;
     // gCost and hCost are useless
     infoTable[from] = {from, 0, 0, {BlockType::SAFE, BlockType::NONE}};
 
@@ -98,9 +100,11 @@ class AstarFinder : public FinderBase<AstarFinder<TDrived>, TPos> {
       auto &posInfo = infoTable[now.pos];
       // check if the block reachs the edge of the chunk
       if (posInfo.type.is(BlockType::UNKNOWN)) {
-        found = true;
         last = pre;
+        found = (knownCountInPQ > 0);
         break;
+      } else {
+        knownCountInPQ--;
       }
       // check if this node has visited before
       if (now.gCost > posInfo.gCost) continue;
@@ -122,6 +126,9 @@ class AstarFinder : public FinderBase<AstarFinder<TDrived>, TPos> {
           pq.push({newPos, gCost, hCost});
           infoTable[newPos] = {parent, gCost, hCost, btype};
         }
+        if (!btype.is(BlockType::UNKNOWN)) {
+          knownCountInPQ++;
+        }
       };
 
       // check jump
@@ -133,6 +140,12 @@ class AstarFinder : public FinderBase<AstarFinder<TDrived>, TPos> {
         const bool isDiagonal = dir.offset.getXZ().abs().sum() > 1;
         TPos floorPos = now.pos + dir.offset;
         BlockType floorType = this->getBlockType(floorPos);
+
+        // unknown
+        if (floorType.is(BlockType::UNKNOWN)) {
+          addNewPos(floorPos, now.pos, now.gCost + dir.cost, floorType);
+          continue;
+        }
 
         // up
         TPos up1Pos = floorPos + TPos{0, 1, 0}, up2Pos = up1Pos + TPos{0, 1, 0},
