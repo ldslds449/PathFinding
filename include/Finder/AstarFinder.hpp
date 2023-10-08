@@ -14,8 +14,11 @@ namespace pathfinding {
 template <class TDrived, class TEstimateEval = eval::Manhattan,
           class TEdgeEval = eval::Euclidean, class TPos = Position>
 class AstarFinder : public FinderBase<AstarFinder<TDrived>, TPos> {
+ private:
+  using BASE = FinderBase<AstarFinder<TDrived>, TPos>;
+
  public:
-  virtual std::shared_ptr<Path<TPos>> findPathImpl(
+  virtual std::pair<PathResult, std::shared_ptr<Path<TPos>>> findPathImpl(
       const TPos &from, const goal::GoalBase<TPos> &goal,
       const U64 &timeLimit) const override {
     // a node in A*
@@ -41,13 +44,6 @@ class AstarFinder : public FinderBase<AstarFinder<TDrived>, TPos> {
 
     // time limit
     auto startTime = std::chrono::steady_clock::now();
-    auto isTimeUp = [&]() -> bool {
-      if (timeLimit == 0) return false;
-      auto now = std::chrono::steady_clock::now();
-      return std::chrono::duration_cast<std::chrono::milliseconds>(now -
-                                                                   startTime)
-                 .count() >= timeLimit;
-    };
 
     // compare function for priority queue, sort Node
     // from lowest cost to largest cost
@@ -84,8 +80,8 @@ class AstarFinder : public FinderBase<AstarFinder<TDrived>, TPos> {
 
     // for loop to find a path to goal
     Node now, last;
-    bool found = false;
-    while (!pq.empty() && !isTimeUp()) {
+    bool found = false, timeUp = false;
+    while (!pq.empty()) {
       Node pre = now;
       now = pq.top();
       pq.pop();
@@ -94,14 +90,13 @@ class AstarFinder : public FinderBase<AstarFinder<TDrived>, TPos> {
         found = true;
         break;
       }
-      auto &posInfo = infoTable[now.pos];
-      // check if the block reachs the edge of the chunk
-      if (posInfo.type.is(BlockType::UNKNOWN)) {
-        // last = pre;
-        found = false;
+      // check if time is up
+      if (BASE::isTimeUp(startTime, timeLimit)) {
+        timeUp = true;
         break;
       }
       // check if this node has visited before
+      auto &posInfo = infoTable[now.pos];
       if (now.gCost > posInfo.gCost) continue;
 
       // add neighbour
@@ -125,17 +120,16 @@ class AstarFinder : public FinderBase<AstarFinder<TDrived>, TPos> {
 
       // check jump
       bool canJump =
-          this->getBlockType(now.pos + TPos{0, 3, 0}).is(BlockType::AIR);
+          BASE::getBlockType(now.pos + TPos{0, 3, 0}).is(BlockType::AIR);
 
       // find neighbour
       for (const Direction &dir : directions) {
         const bool isDiagonal = dir.offset.getXZ().abs().sum() > 1;
         TPos floorPos = now.pos + dir.offset;
-        BlockType floorType = this->getBlockType(floorPos);
+        BlockType floorType = BASE::getBlockType(floorPos);
 
         // unknown
         if (floorType.is(BlockType::UNKNOWN)) {
-          addNewPos(floorPos, now.pos, now.gCost + dir.cost, floorType);
           continue;
         }
 
@@ -148,15 +142,15 @@ class AstarFinder : public FinderBase<AstarFinder<TDrived>, TPos> {
              upX2Pos = upX1Pos + TPos{0, 1, 0},
              upZ3Pos = upZ2Pos + TPos{0, 1, 0},
              upX3Pos = upX2Pos + TPos{0, 1, 0};
-        BlockType up1Type = this->getBlockType(up1Pos),
-                  up2Type = this->getBlockType(up2Pos),
-                  up3Type = this->getBlockType(up3Pos);
-        BlockType upZ1Type = this->getBlockType(upZ1Pos),
-                  upX1Type = this->getBlockType(upX1Pos),
-                  upZ2Type = this->getBlockType(upZ2Pos),
-                  upX2Type = this->getBlockType(upX2Pos),
-                  upZ3Type = this->getBlockType(upZ3Pos),
-                  upX3Type = this->getBlockType(upX3Pos);
+        BlockType up1Type = BASE::getBlockType(up1Pos),
+                  up2Type = BASE::getBlockType(up2Pos),
+                  up3Type = BASE::getBlockType(up3Pos);
+        BlockType upZ1Type = BASE::getBlockType(upZ1Pos),
+                  upX1Type = BASE::getBlockType(upX1Pos),
+                  upZ2Type = BASE::getBlockType(upZ2Pos),
+                  upX2Type = BASE::getBlockType(upX2Pos),
+                  upZ3Type = BASE::getBlockType(upZ3Pos),
+                  upX3Type = BASE::getBlockType(upX3Pos);
         if (up1Type.is(BlockType::AIR) && up2Type.is(BlockType::AIR) &&
             floorType.is(BlockType::SAFE)) {
           if (!isDiagonal ||
@@ -182,17 +176,17 @@ class AstarFinder : public FinderBase<AstarFinder<TDrived>, TPos> {
               upX1Type.is(BlockType::AIR) && upZ2Type.is(BlockType::AIR) &&
               upX2Type.is(BlockType::AIR)))) {
           TPos landingPos = floorPos;
-          BlockType landingType = this->getBlockType(landingPos);
+          BlockType landingType = BASE::getBlockType(landingPos);
           U64 cost = 0;
           while (landingType.is(BlockType::AIR) ||
                  landingType.is(BlockType::FORCE_DOWN)) {
             // falling
             landingPos -= TPos{0, 1, 0};
-            landingType = this->getBlockType(landingPos);
+            landingType = BASE::getBlockType(landingPos);
             cost += fallCost;
           }
           if (!landingType.is(BlockType::DANGER) &&
-              this->getFallDamage(landingPos, (floorPos - landingPos).y) <=
+              BASE::getFallDamage(landingPos, (floorPos - landingPos).y) <=
                   config.fallingDamageTolerance) {
             addNewPos(landingPos, now.pos, now.gCost + cost, landingType);
           }
@@ -211,9 +205,12 @@ class AstarFinder : public FinderBase<AstarFinder<TDrived>, TPos> {
         nowPos = newPos;
       }
       path->reverse();
+      return {PathResult::FOUND, path};
+    } else if (timeUp) {
+      return {PathResult::TIME_LIMIT_EXCEED, path};
+    } else {
+      return {PathResult::NOT_FOUND, path};
     }
-
-    return path;
   }
 
   struct finderConfig {

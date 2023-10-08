@@ -7,6 +7,7 @@
 #include <memory>
 #include <regex>
 #include <string>
+#include <utility>
 
 #include "BlockType.hpp"
 #include "Goal/Goal.hpp"
@@ -15,15 +16,17 @@
 
 namespace pathfinding {
 
+enum PathResult { FOUND, NOT_FOUND, TIME_LIMIT_EXCEED };
+
 template <class TDrived, class TPos>
 class FinderBase {
  public:
   /*
    * Find a path to the goal
    */
-  inline std::shared_ptr<Path<TPos>> findPath(const TPos &from,
-                                              const goal::GoalBase<TPos> &goal,
-                                              const U64 &timeLimit = 0) const {
+  inline std::pair<PathResult, std::shared_ptr<Path<TPos>>> findPath(
+      const TPos &from, const goal::GoalBase<TPos> &goal,
+      const U64 &timeLimit = 0) const {
     return static_cast<const TDrived *>(this)->findPathImpl(from, goal,
                                                             timeLimit);
   }
@@ -43,8 +46,9 @@ class FinderBase {
         [&](const TPos &nowFrom,
             const goal::GoalBase<TPos> &nowGoal) -> std::pair<bool, TPos> {
       auto t1 = std::chrono::steady_clock::now();
-      auto path = findPath(nowFrom, nowGoal, timeLimit);
+      auto r = findPath(nowFrom, nowGoal, timeLimit);
       auto t2 = std::chrono::steady_clock::now();
+      auto path = r.second;
 
       std::cout << (*path) << "Length: " << path->size() << std::endl;
       std::cout << "Took: "
@@ -121,7 +125,7 @@ class FinderBase {
   /*
    * This should be implemented in subclass
    */
-  virtual std::shared_ptr<Path<TPos>> findPathImpl(
+  virtual std::pair<PathResult, std::shared_ptr<Path<TPos>>> findPathImpl(
       const TPos &from, const goal::GoalBase<TPos> &goal,
       const U64 &timeLimit) const = 0;
 
@@ -194,6 +198,15 @@ class FinderBase {
     }
     return damage;
   };
+
+ protected:
+  bool isTimeUp(const std::chrono::steady_clock::time_point &start,
+                const U64 &timeLimit) const {
+    if (timeLimit == 0) return false;
+    auto now = std::chrono::steady_clock::now();
+    return std::chrono::duration_cast<std::chrono::milliseconds>(now - start)
+               .count() >= timeLimit;
+  }
 
  private:
   FinderBase() = default;
