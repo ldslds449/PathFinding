@@ -13,6 +13,8 @@ class Manhattan final : public EvaluateBase<Manhattan> {
   static CostT evalImpl(const TPos &pos, const TPos &target) {
     return pos.manhattanDist(target);
   };
+
+  Manhattan() = delete;
 };
 
 }  // namespace eval

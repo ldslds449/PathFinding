@@ -138,7 +138,7 @@ class Vec3 {
                static_cast<TReturn>(target.z - z);
   }
 
-  inline T maxAxisOffset(const Vec3<T> &target) const {
+  inline T diagonalDist(const Vec3<T> &target) const {
     return std::max(std::max(std::abs(target.x - x), std::abs(target.y - y)),
                     std::abs(target.z - z));
   }

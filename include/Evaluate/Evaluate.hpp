@@ -3,6 +3,6 @@
 
 #include "Manhattan.hpp"
 #include "Euclidean.hpp"
-#include "MaxAxisOffset.hpp"
+#include "Diagonal.hpp"
 
 #endif  // PATHFINDING_EVALUATE_EVALUATE_H_

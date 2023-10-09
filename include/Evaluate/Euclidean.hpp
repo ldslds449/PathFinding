@@ -13,6 +13,8 @@ class Euclidean final : public EvaluateBase<Euclidean> {
   static CostT evalImpl(const TPos &pos, const TPos &target) {
     return pos.template squaredEuclideanDist<CostT>(target);
   };
+
+  Euclidean() = delete;
 };
 
 }  // namespace eval
