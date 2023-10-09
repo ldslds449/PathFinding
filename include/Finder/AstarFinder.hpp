@@ -31,7 +31,6 @@ class AstarFinder : public FinderBase<AstarFinder<TDrived>, TPos> {
     struct PosInfo {
       TPos parent;
       U64 gCost, hCost;  // the lowest gCost, hCost of key
-      BlockType type;
     };
 
     // direction to generate next node
@@ -76,7 +75,7 @@ class AstarFinder : public FinderBase<AstarFinder<TDrived>, TPos> {
     // add initial state
     pq.push({from, 0, TEstimateEval::eval(from, to)});
     // gCost and hCost are useless
-    infoTable[from] = {from, 0, 0, {BlockType::SAFE, BlockType::NONE}};
+    infoTable[from] = {from, 0, 0};
 
     // for loop to find a path to goal
     Node now, last;
@@ -99,96 +98,39 @@ class AstarFinder : public FinderBase<AstarFinder<TDrived>, TPos> {
       auto &posInfo = infoTable[now.pos];
       if (now.gCost > posInfo.gCost) continue;
 
-      // add neighbour
-      auto addNewPos = [&](const TPos &newPos, const TPos &parent,
-                           const U64 &gCost, const BlockType &btype) {
-        auto found_it = infoTable.find(newPos);
-        if (found_it != infoTable.end()) {
-          U64 &PreGCost = found_it->second.gCost;
-          // compare the gCost and reserve the one with lower cost
-          if (gCost < PreGCost) {
-            found_it->second.parent = parent;
-            found_it->second.gCost = gCost;
-            pq.push({newPos, gCost, found_it->second.hCost});  // lazy deletion
-          }
-        } else {
-          U64 hCost = TEstimateEval::eval(newPos, to);
-          pq.push({newPos, gCost, hCost});
-          infoTable[newPos] = {parent, gCost, hCost, btype};
-        }
-      };
-
       // check jump
       bool canJump =
           BASE::getBlockType(now.pos + TPos{0, 3, 0}).is(BlockType::AIR);
 
       // find neighbour
       for (const Direction &dir : directions) {
-        const bool isDiagonal = dir.offset.getXZ().abs().sum() > 1;
-        TPos floorPos = now.pos + dir.offset;
-        BlockType floorType = BASE::getBlockType(floorPos);
+        TPos newOffset = BASE::isAbleToWalkTo(now.pos, dir.offset,
+                                              config.fallingDamageTolerance);
+        if (newOffset.abs().sum() > 0) {
+          U64 addGCost = dir.cost;
+          if (newOffset.y > 0)
+            addGCost = dir.upCost;
+          else if (newOffset.y < 0)
+            addGCost = fallCost * (-newOffset.y);
 
-        // unknown
-        if (floorType.is(BlockType::UNKNOWN)) {
-          continue;
-        }
+          // add new position
+          const TPos newPos = now.pos + newOffset;
+          const TPos &parent = now.pos;
+          const U64 newGCost = now.gCost + addGCost;
 
-        // up
-        TPos up1Pos = floorPos + TPos{0, 1, 0}, up2Pos = up1Pos + TPos{0, 1, 0},
-             up3Pos = up2Pos + TPos{0, 1, 0};
-        TPos upZ1Pos = now.pos + TPos{0, 1, dir.offset.z},
-             upX1Pos = now.pos + TPos{dir.offset.x, 1, 0},
-             upZ2Pos = upZ1Pos + TPos{0, 1, 0},
-             upX2Pos = upX1Pos + TPos{0, 1, 0},
-             upZ3Pos = upZ2Pos + TPos{0, 1, 0},
-             upX3Pos = upX2Pos + TPos{0, 1, 0};
-        BlockType up1Type = BASE::getBlockType(up1Pos),
-                  up2Type = BASE::getBlockType(up2Pos),
-                  up3Type = BASE::getBlockType(up3Pos);
-        BlockType upZ1Type = BASE::getBlockType(upZ1Pos),
-                  upX1Type = BASE::getBlockType(upX1Pos),
-                  upZ2Type = BASE::getBlockType(upZ2Pos),
-                  upX2Type = BASE::getBlockType(upX2Pos),
-                  upZ3Type = BASE::getBlockType(upZ3Pos),
-                  upX3Type = BASE::getBlockType(upX3Pos);
-        if (up1Type.is(BlockType::AIR) && up2Type.is(BlockType::AIR) &&
-            floorType.is(BlockType::SAFE)) {
-          if (!isDiagonal ||
-              (upZ1Type.is(BlockType::AIR) && upX1Type.is(BlockType::AIR) &&
-               upZ2Type.is(BlockType::AIR) && upX2Type.is(BlockType::AIR))) {
-            addNewPos(floorPos, now.pos, now.gCost + dir.cost, floorType);
-          }
-        }
-        if (up2Type.is(BlockType::AIR) && up3Type.is(BlockType::AIR) &&
-            up1Type.is(BlockType::SAFE) && canJump) {
-          if (!isDiagonal ||
-              (upZ2Type.is(BlockType::AIR) && upX2Type.is(BlockType::AIR) &&
-               upZ3Type.is(BlockType::AIR) && upX3Type.is(BlockType::AIR))) {
-            addNewPos(up1Pos, now.pos, now.gCost + dir.upCost, up1Type);
-          }
-        }
-
-        // down
-        if (floorType.is(BlockType::AIR) &&
-            ((!isDiagonal && up1Type.is(BlockType::AIR) &&
-              up2Type.is(BlockType::AIR)) ||
-             (isDiagonal && upZ1Type.is(BlockType::AIR) &&
-              upX1Type.is(BlockType::AIR) && upZ2Type.is(BlockType::AIR) &&
-              upX2Type.is(BlockType::AIR)))) {
-          TPos landingPos = floorPos;
-          BlockType landingType = BASE::getBlockType(landingPos);
-          U64 cost = 0;
-          while (landingType.is(BlockType::AIR) ||
-                 landingType.is(BlockType::FORCE_DOWN)) {
-            // falling
-            landingPos -= TPos{0, 1, 0};
-            landingType = BASE::getBlockType(landingPos);
-            cost += fallCost;
-          }
-          if (!landingType.is(BlockType::DANGER) &&
-              BASE::getFallDamage(landingPos, (floorPos - landingPos).y) <=
-                  config.fallingDamageTolerance) {
-            addNewPos(landingPos, now.pos, now.gCost + cost, landingType);
+          auto found_it = infoTable.find(newPos);
+          if (found_it != infoTable.end()) {
+            U64 &PreGCost = found_it->second.gCost;
+            // compare the gCost and reserve the one with lower cost
+            if (newGCost < PreGCost) {
+              found_it->second.parent = parent;
+              found_it->second.gCost = newGCost;
+              pq.push({newPos, newGCost, found_it->second.hCost});  // lazy deletion
+            }
+          } else {
+            U64 newHCost = TEstimateEval::eval(newPos, to);
+            pq.push({newPos, newGCost, newHCost});
+            infoTable[newPos] = {parent, newGCost, newHCost};
           }
         }
       }

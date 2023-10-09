@@ -8,6 +8,7 @@
 #include <regex>
 #include <string>
 #include <utility>
+#include <vector>
 
 #include "BlockType.hpp"
 #include "Goal/Goal.hpp"
@@ -50,14 +51,21 @@ class FinderBase {
       auto t2 = std::chrono::steady_clock::now();
       auto path = r.second;
 
-      std::cout << (*path) << "Length: " << path->size() << std::endl;
+      std::cout << "Length: " << path->size() << std::endl;
       std::cout << "Took: "
                 << std::chrono::duration_cast<std::chrono::milliseconds>(t2 -
                                                                          t1)
                        .count()
                 << "ms" << std::endl;
 
-      if (path->size() == 0) return {false, TPos()};
+      if (path->size() == 0) {
+        if (r.first == PathResult::NOT_FOUND) {
+          std::cout << "Path Not Found" << std::endl << std::flush;
+        } else if (r.first == PathResult::TIME_LIMIT_EXCEED) {
+          std::cout << "Time Limit Exceed" << std::endl << std::flush;
+        }
+        return {false, TPos()};
+      }
       std::cout << "Executing...\n";
       go(path);
       std::cout << "Done\n";
@@ -80,7 +88,8 @@ class FinderBase {
 
         std::cout << "Position " << goal.getGoalPosition()
                   << " is in a unload chunk, try to get closer " << nowGoalPos
-                  << " to load the chunk." << std::endl;
+                  << " to load the chunk." << std::endl
+                  << std::flush;
 
         auto result = run(lastPos, goal::RangeGoal<TPos>(nowGoalPos, 5, -1, 5));
         if (!result.first) break;
@@ -106,11 +115,26 @@ class FinderBase {
     return static_cast<const TDrived *>(this)->getBlockNameImpl(pos);
   }
 
+  inline std::vector<std::string> getBlockName(
+      const std::vector<TPos> &pos) const {
+    return static_cast<const TDrived *>(this)->getBlockNameImpl(pos);
+  }
+
   /*
    * Get the block type of the block at a specific position
    */
+
   inline BlockType getBlockType(const TPos &pos) const {
     return static_cast<const TDrived *>(this)->getBlockTypeImpl(pos);
+  }
+
+  inline std::vector<BlockType> getBlockType(
+      const std::vector<TPos> &pos) const {
+    return static_cast<const TDrived *>(this)->getBlockTypeImpl(pos);
+  }
+
+  inline BlockType getBlockType(const std::string &blockName) const {
+    return static_cast<const TDrived *>(this)->getBlockTypeImpl(blockName);
   }
 
   /*
@@ -153,11 +177,34 @@ class FinderBase {
    */
   virtual std::string getBlockNameImpl(const TPos &pos) const = 0;
 
+  virtual std::vector<std::string> getBlockNameImpl(
+      const std::vector<TPos> &pos) const {
+    std::vector<std::string> names;
+    for (const TPos &p : pos) {
+      names.push_back(getBlockNameImpl(p));
+    }
+    return names;
+  }
+
   /*
    * Override this if needed
    */
   virtual BlockType getBlockTypeImpl(const TPos &pos) const {
     const std::string blockName = getBlockName(pos);
+    return getBlockTypeImpl(blockName);
+  }
+
+  virtual std::vector<BlockType> getBlockTypeImpl(
+      const std::vector<TPos> &pos) const {
+    const std::vector<std::string> blockNames = getBlockName(pos);
+    std::vector<BlockType> blockTypes;
+    for (const std::string &name : blockNames) {
+      blockTypes.push_back(getBlockTypeImpl(name));
+    }
+    return blockTypes;
+  }
+
+  virtual BlockType getBlockTypeImpl(const std::string &blockName) const {
     const BlockType defaultBlockType = {BlockType::SAFE, BlockType::NONE};
     const std::unordered_map<std::string, BlockType> blockTable = {
         {"", {BlockType::UNKNOWN, BlockType::NONE}},
@@ -206,6 +253,95 @@ class FinderBase {
     auto now = std::chrono::steady_clock::now();
     return std::chrono::duration_cast<std::chrono::milliseconds>(now - start)
                .count() >= timeLimit;
+  }
+
+  TPos isAbleToWalkTo(const TPos &from, const TPos &XZoffset,
+                      const float &fallDamageTol) const {
+    bool canJump = getBlockType(from + TPos{0, 3, 0}).is(BlockType::AIR);
+    const bool isDiagonal = XZoffset.getXZ().abs().sum() > 1;
+
+    // check positions
+    const std::vector blocksPos = {
+        from + XZoffset,
+        from + XZoffset + TPos{0, 1, 0},
+        from + XZoffset + TPos{0, 2, 0},
+        from + XZoffset + TPos{0, 3, 0},
+        from + TPos{0, 1, XZoffset.z},
+        from + TPos{0, 2, XZoffset.z},
+        from + TPos{0, 3, XZoffset.z},
+        from + TPos{XZoffset.x, 1, 0},
+        from + TPos{XZoffset.x, 2, 0},
+        from + TPos{XZoffset.x, 3, 0},
+    };
+    // alias
+    enum COORD : short {
+      FLOOR = 0,
+      FLOOR_UP1,
+      FLOOR_UP2,
+      FLOOR_UP3,
+      Z_UP1,
+      Z_UP2,
+      Z_UP3,
+      X_UP1,
+      X_UP2,
+      X_UP3,
+    };
+    const std::vector<BlockType> blockTypes = getBlockType(blocksPos);
+
+    // unknown, always can not walk to
+    if (blockTypes[COORD::FLOOR].is(BlockType::UNKNOWN)) {
+      return TPos{0, 0, 0};
+    }
+
+    // walk
+    if (blockTypes[COORD::FLOOR_UP1].is(BlockType::AIR) &&
+        blockTypes[COORD::FLOOR_UP2].is(BlockType::AIR) &&
+        blockTypes[COORD::FLOOR].is(BlockType::SAFE)) {
+      if (!isDiagonal || (blockTypes[COORD::X_UP1].is(BlockType::AIR) &&
+                          blockTypes[COORD::X_UP2].is(BlockType::AIR) &&
+                          blockTypes[COORD::Z_UP1].is(BlockType::AIR) &&
+                          blockTypes[COORD::Z_UP2].is(BlockType::AIR))) {
+        return XZoffset;
+      }
+    }
+
+    // walk + jump
+    if (blockTypes[COORD::FLOOR_UP2].is(BlockType::AIR) &&
+        blockTypes[COORD::FLOOR_UP3].is(BlockType::AIR) &&
+        blockTypes[COORD::FLOOR_UP1].is(BlockType::SAFE) && canJump) {
+      if (!isDiagonal || (blockTypes[COORD::X_UP2].is(BlockType::AIR) &&
+                          blockTypes[COORD::X_UP3].is(BlockType::AIR) &&
+                          blockTypes[COORD::Z_UP2].is(BlockType::AIR) &&
+                          blockTypes[COORD::Z_UP3].is(BlockType::AIR))) {
+        return XZoffset + TPos{0, 1, 0};
+      }
+    }
+
+    // fall
+    if ((blockTypes[COORD::FLOOR].is(BlockType::AIR) ||
+         blockTypes[COORD::FLOOR].is(BlockType::FORCE_DOWN)) &&
+        blockTypes[COORD::FLOOR_UP1].is(BlockType::AIR) &&
+        blockTypes[COORD::FLOOR_UP2].is(BlockType::AIR) &&
+        (!isDiagonal || blockTypes[COORD::Z_UP1].is(BlockType::AIR) &&
+                            blockTypes[COORD::Z_UP2].is(BlockType::AIR) &&
+                            blockTypes[COORD::X_UP1].is(BlockType::AIR) &&
+                            blockTypes[COORD::X_UP2].is(BlockType::AIR))) {
+      TPos landingPos = blocksPos[COORD::FLOOR];
+      BlockType landingType;
+      // falling
+      do {
+        landingPos -= TPos{0, 1, 0};
+        landingType = getBlockType(landingPos);
+      } while (landingType.is(BlockType::AIR) ||
+               landingType.is(BlockType::FORCE_DOWN));
+      if (!landingType.is(BlockType::DANGER) &&
+          getFallDamage(landingPos, (blocksPos[COORD::FLOOR] - landingPos).y) <=
+              fallDamageTol) {
+        return landingPos - from;
+      }
+    }
+
+    return TPos(0, 0, 0);
   }
 
  private:

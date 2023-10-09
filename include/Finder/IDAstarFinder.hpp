@@ -22,7 +22,7 @@ class IDAstarFinder : public FinderBase<IDAstarFinder<TDrived>, TPos> {
   virtual std::pair<PathResult, std::shared_ptr<Path<TPos>>> findPathImpl(
       const TPos &from, const goal::GoalBase<TPos> &goal,
       const U64 &timeLimit) const override {
-    U64 costLimit = 0;
+    U64 costLimit = TEstimateEval::eval(from, goal.getGoalPosition());
     U64 nowTimeLimit = timeLimit;
     while (true) {
       auto start = std::chrono::steady_clock::now();
@@ -30,7 +30,8 @@ class IDAstarFinder : public FinderBase<IDAstarFinder<TDrived>, TPos> {
       auto end = std::chrono::steady_clock::now();
       if (std::get<0>(r) == PathResult::FOUND)
         return {PathResult::FOUND, std::get<1>(r)};  // found
-      if (std::get<0>(r) == PathResult::NOT_FOUND && std::get<2>(r) == costLimit)
+      if (std::get<0>(r) == PathResult::NOT_FOUND &&
+          std::get<2>(r) == costLimit)
         return {PathResult::NOT_FOUND, std::get<1>(r)};  // not found
       if (std::get<0>(r) == PathResult::TIME_LIMIT_EXCEED)
         return {PathResult::TIME_LIMIT_EXCEED, std::get<1>(r)};
@@ -54,9 +55,9 @@ class IDAstarFinder : public FinderBase<IDAstarFinder<TDrived>, TPos> {
   finderConfig config;
 
  protected:
-  std::tuple<PathResult, std::shared_ptr<Path<TPos>>, U64>
-  AstarWithCostLimit(const TPos &from, const goal::GoalBase<TPos> &goal,
-                     const U64 &timeLimit, const U64 &costLimit) const {
+  std::tuple<PathResult, std::shared_ptr<Path<TPos>>, U64> AstarWithCostLimit(
+      const TPos &from, const goal::GoalBase<TPos> &goal, const U64 &timeLimit,
+      const U64 &costLimit) const {
     struct Node {
       TPos pos;
       short dirIdx;
@@ -132,98 +133,26 @@ class IDAstarFinder : public FinderBase<IDAstarFinder<TDrived>, TPos> {
 
       // get next neighbour
       const Direction &dir = directions[now.dirIdx];
-      const bool isDiagonal = dir.offset.getXZ().abs().sum() > 1;
-      TPos floorPos = now.pos + dir.offset;
-      BlockType floorType = BASE::getBlockType(floorPos);
 
-      // unknown
-      if (floorType.is(BlockType::UNKNOWN)) {
-        continue;
-      }
+      TPos newOffset = BASE::isAbleToWalkTo(now.pos, dir.offset,
+                                            config.fallingDamageTolerance);
+      if (newOffset.abs().sum() > 0) {
+        const TPos newPos = now.pos + newOffset;
+        // whether we visited it before
+        if (visited.count(newPos) == 0) {
+          U64 addGCost = dir.cost;
+          if (newOffset.y > 0)
+            addGCost = dir.upCost;
+          else if (newOffset.y < 0)
+            addGCost = fallCost * (-newOffset.y);
 
-      // up
-      TPos up1Pos = floorPos + TPos{0, 1, 0}, up2Pos = up1Pos + TPos{0, 1, 0},
-           up3Pos = up2Pos + TPos{0, 1, 0};
-      TPos upZ1Pos = now.pos + TPos{0, 1, dir.offset.z},
-           upX1Pos = now.pos + TPos{dir.offset.x, 1, 0},
-           upZ2Pos = upZ1Pos + TPos{0, 1, 0}, upX2Pos = upX1Pos + TPos{0, 1, 0},
-           upZ3Pos = upZ2Pos + TPos{0, 1, 0}, upX3Pos = upX2Pos + TPos{0, 1, 0};
-      BlockType up1Type = BASE::getBlockType(up1Pos),
-                up2Type = BASE::getBlockType(up2Pos),
-                up3Type = BASE::getBlockType(up3Pos);
-      BlockType upZ1Type = BASE::getBlockType(upZ1Pos),
-                upX1Type = BASE::getBlockType(upX1Pos),
-                upZ2Type = BASE::getBlockType(upZ2Pos),
-                upX2Type = BASE::getBlockType(upX2Pos),
-                upZ3Type = BASE::getBlockType(upZ3Pos),
-                upX3Type = BASE::getBlockType(upX3Pos);
-      if (up1Type.is(BlockType::AIR) && up2Type.is(BlockType::AIR) &&
-          floorType.is(BlockType::SAFE)) {
-        if (!isDiagonal ||
-            (upZ1Type.is(BlockType::AIR) && upX1Type.is(BlockType::AIR) &&
-             upZ2Type.is(BlockType::AIR) && upX2Type.is(BlockType::AIR))) {
-          // whether we visited it before
-          if (visited.count(floorPos) == 0) {
-            U64 newGCost = now.gCost + dir.cost;
-            U64 newFCost = newGCost + TEstimateEval::eval(floorPos, to);
-            if (newFCost <= costLimit) {
-              st.push({floorPos, 0, newGCost});
-              visited.insert(floorPos);
-            } else {
-              minExceedCost = std::min(minExceedCost, newFCost);
-            }
-          }
-        }
-      }
-      if (up2Type.is(BlockType::AIR) && up3Type.is(BlockType::AIR) &&
-          up1Type.is(BlockType::SAFE) && canJump) {
-        if (!isDiagonal ||
-            (upZ2Type.is(BlockType::AIR) && upX2Type.is(BlockType::AIR) &&
-             upZ3Type.is(BlockType::AIR) && upX3Type.is(BlockType::AIR))) {
-          // whether we visited it before
-          if (visited.count(up1Pos) == 0) {
-            U64 newGCost = now.gCost + dir.upCost;
-            U64 newFCost = newGCost + TEstimateEval::eval(up1Pos, to);
-            if (newFCost <= costLimit) {
-              st.push({up1Pos, 0, newGCost});
-              visited.insert(up1Pos);
-            } else {
-              minExceedCost = std::min(minExceedCost, newFCost);
-            }
-          }
-        }
-      }
-
-      // down
-      if (floorType.is(BlockType::AIR) &&
-          ((!isDiagonal && up1Type.is(BlockType::AIR) &&
-            up2Type.is(BlockType::AIR)) ||
-           (isDiagonal && upZ1Type.is(BlockType::AIR) &&
-            upX1Type.is(BlockType::AIR) && upZ2Type.is(BlockType::AIR) &&
-            upX2Type.is(BlockType::AIR)))) {
-        TPos landingPos = floorPos;
-        BlockType landingType = BASE::getBlockType(landingPos);
-        U64 cost = 0;
-        while (landingType.is(BlockType::AIR) ||
-               landingType.is(BlockType::FORCE_DOWN)) {
-          // falling
-          landingPos -= TPos{0, 1, 0};
-          landingType = BASE::getBlockType(landingPos);
-          cost += fallCost;
-        }
-        if (!landingType.is(BlockType::DANGER) &&
-            BASE::getFallDamage(landingPos, (floorPos - landingPos).y) <=
-                config.fallingDamageTolerance) {
-          // whether we visited it before
-          if (visited.count(landingPos) == 0) {
-            U64 newGCost = now.gCost + cost;
-            U64 newFCost = newGCost + TEstimateEval::eval(landingPos, to);
-            if (newFCost <= costLimit) {
-              st.push({landingPos, 0, newGCost});
-              visited.insert(landingPos);
-            } else {
-              minExceedCost = std::min(minExceedCost, newFCost);
-            }
+          U64 newGCost = now.gCost + addGCost;
+          U64 newFCost = newGCost + TEstimateEval::eval(newPos, to);
+          if (newFCost <= costLimit) {
+            st.push({newPos, 0, newGCost});
+            visited.insert(newPos);
+          } else {
+            minExceedCost = std::min(minExceedCost, newFCost);
           }
         }
       }
