@@ -2,6 +2,7 @@
 #define PATHFINDING_FINDER_IDASTARFINDER_H_
 
 #include <chrono>
+#include <limits>
 #include <stack>
 #include <unordered_set>
 
@@ -22,7 +23,7 @@ class IDAstarFinder : public FinderBase<IDAstarFinder<TDrived>, TPos> {
   virtual std::pair<PathResult, std::shared_ptr<Path<TPos>>> findPathImpl(
       const TPos &from, const goal::GoalBase<TPos> &goal,
       const U64 &timeLimit) const override {
-    U64 costLimit = TEstimateEval::eval(from, goal.getGoalPosition());
+    CostT costLimit = TEstimateEval::eval(from, goal.getGoalPosition());
     U64 nowTimeLimit = timeLimit;
     while (true) {
       auto start = std::chrono::steady_clock::now();
@@ -55,19 +56,19 @@ class IDAstarFinder : public FinderBase<IDAstarFinder<TDrived>, TPos> {
   finderConfig config;
 
  protected:
-  std::tuple<PathResult, std::shared_ptr<Path<TPos>>, U64> AstarWithCostLimit(
+  std::tuple<PathResult, std::shared_ptr<Path<TPos>>, CostT> AstarWithCostLimit(
       const TPos &from, const goal::GoalBase<TPos> &goal, const U64 &timeLimit,
-      const U64 &costLimit) const {
+      const CostT &costLimit) const {
     struct Node {
       TPos pos;
       short dirIdx;
-      U64 gCost;
+      CostT gCost;
     };
 
     // direction to generate next node
     struct Direction {
       TPos offset;
-      U64 cost, upCost;
+      CostT cost, upCost;
     };
 
     const TPos &to = goal.getGoalPosition();
@@ -94,7 +95,7 @@ class IDAstarFinder : public FinderBase<IDAstarFinder<TDrived>, TPos> {
                               TEdgeEval::eval(offset + TPos{0, 1, 0})});
       }
     }
-    const U64 fallCost = TEdgeEval::eval(TPos{0, 1, 0});
+    const CostT fallCost = TEdgeEval::eval(TPos{0, 1, 0});
 
     // add initial state
     st.push({from, 0, 0});
@@ -103,7 +104,7 @@ class IDAstarFinder : public FinderBase<IDAstarFinder<TDrived>, TPos> {
     // for loop to find a path to goal
     TPos last;
     bool found = false, timeUp = false;
-    U64 minExceedCost = -1;  // maximum
+    CostT minExceedCost = std::numeric_limits<CostT>::max();  // maximum
     while (!st.empty()) {
       auto now = st.top();
       st.pop();
@@ -140,14 +141,14 @@ class IDAstarFinder : public FinderBase<IDAstarFinder<TDrived>, TPos> {
         const TPos newPos = now.pos + newOffset;
         // whether we visited it before
         if (visited.count(newPos) == 0) {
-          U64 addGCost = dir.cost;
+          CostT addGCost = dir.cost;
           if (newOffset.y > 0)
             addGCost = dir.upCost;
           else if (newOffset.y < 0)
             addGCost = fallCost * (-newOffset.y);
 
-          U64 newGCost = now.gCost + addGCost;
-          U64 newFCost = newGCost + TEstimateEval::eval(newPos, to);
+          CostT newGCost = now.gCost + addGCost;
+          CostT newFCost = newGCost + TEstimateEval::eval(newPos, to);
           if (newFCost <= costLimit) {
             st.push({newPos, 0, newGCost});
             visited.insert(newPos);
@@ -172,8 +173,10 @@ class IDAstarFinder : public FinderBase<IDAstarFinder<TDrived>, TPos> {
     } else if (timeUp) {
       return {PathResult::TIME_LIMIT_EXCEED, path, 0};
     } else {
-      return {PathResult::NOT_FOUND, path,
-              (minExceedCost == -1 ? costLimit : minExceedCost)};
+      return {
+          PathResult::NOT_FOUND, path,
+          (minExceedCost == std::numeric_limits<CostT>::max() ? costLimit
+                                                              : minExceedCost)};
     }
   }
 };

@@ -24,19 +24,19 @@ class AstarFinder : public FinderBase<AstarFinder<TDrived>, TPos> {
     // a node in A*
     struct Node {
       TPos pos;
-      U64 gCost, hCost;
+      CostT gCost, hCost;
     };
 
     // record the information of a node
     struct PosInfo {
       TPos parent;
-      U64 gCost, hCost;  // the lowest gCost, hCost of key
+      CostT gCost, hCost;  // the lowest gCost, hCost of key
     };
 
     // direction to generate next node
     struct Direction {
       TPos offset;
-      U64 cost, upCost;
+      CostT cost, upCost;
     };
 
     const TPos &to = goal.getGoalPosition();
@@ -70,7 +70,7 @@ class AstarFinder : public FinderBase<AstarFinder<TDrived>, TPos> {
                               TEdgeEval::eval(offset + TPos{0, 1, 0})});
       }
     }
-    const U64 fallCost = TEdgeEval::eval(TPos{0, 1, 0});
+    const CostT fallCost = TEdgeEval::eval(TPos{0, 1, 0});
 
     // add initial state
     pq.push({from, 0, TEstimateEval::eval(from, to)});
@@ -107,7 +107,7 @@ class AstarFinder : public FinderBase<AstarFinder<TDrived>, TPos> {
         TPos newOffset = BASE::isAbleToWalkTo(now.pos, dir.offset,
                                               config.fallingDamageTolerance);
         if (newOffset.abs().sum() > 0) {
-          U64 addGCost = dir.cost;
+          CostT addGCost = dir.cost;
           if (newOffset.y > 0)
             addGCost = dir.upCost;
           else if (newOffset.y < 0)
@@ -116,11 +116,11 @@ class AstarFinder : public FinderBase<AstarFinder<TDrived>, TPos> {
           // add new position
           const TPos newPos = now.pos + newOffset;
           const TPos &parent = now.pos;
-          const U64 newGCost = now.gCost + addGCost;
+          const CostT newGCost = now.gCost + addGCost;
 
           auto found_it = infoTable.find(newPos);
           if (found_it != infoTable.end()) {
-            U64 &PreGCost = found_it->second.gCost;
+            CostT &PreGCost = found_it->second.gCost;
             // compare the gCost and reserve the one with lower cost
             if (newGCost < PreGCost) {
               found_it->second.parent = parent;
@@ -128,7 +128,7 @@ class AstarFinder : public FinderBase<AstarFinder<TDrived>, TPos> {
               pq.push({newPos, newGCost, found_it->second.hCost});  // lazy deletion
             }
           } else {
-            U64 newHCost = TEstimateEval::eval(newPos, to);
+            CostT newHCost = TEstimateEval::eval(newPos, to);
             pq.push({newPos, newGCost, newHCost});
             infoTable[newPos] = {parent, newGCost, newHCost};
           }

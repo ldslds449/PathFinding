@@ -10,7 +10,7 @@ namespace eval {
 class MaxAxisOffset final : public EvaluateBase<MaxAxisOffset> {
  public:
   template <class TPos>
-  static U64 evalImpl(const TPos &pos, const TPos &target) {
+  static CostT evalImpl(const TPos &pos, const TPos &target) {
     return pos.maxAxisOffset(target);
   };
 };

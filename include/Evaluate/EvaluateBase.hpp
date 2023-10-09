@@ -2,6 +2,7 @@
 #define PATHFINDING_EVALUATE_EVALUATEBASE_H_
 
 #include "Vec3.hpp"
+#include "Type.hpp"
 
 namespace pathfinding {
 
@@ -11,12 +12,12 @@ template <class TDrived>
 class EvaluateBase {
  public:
   template <class TPos>
-  inline static U64 eval(const TPos &pos, const TPos &target) {
+  inline static CostT eval(const TPos &pos, const TPos &target) {
     return TDrived::evalImpl(pos, target);
   };
 
   template <class TPos>
-  inline static U64 eval(const TPos &target) {
+  inline static CostT eval(const TPos &target) {
     return TDrived::evalImpl(TPos(), target);
   };
 
