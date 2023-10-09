@@ -8,14 +8,20 @@
 #include "Finder/FinderBase.hpp"
 #include "Type.hpp"
 #include "Vec3.hpp"
+#include "Weighted/Weighted.hpp"
 
 namespace pathfinding {
 
-template <class TDrived, class TEstimateEval = eval::Manhattan,
+template <class TDrived, class TWeighted = weight::ConstWeighted<>,
+          class TEstimateEval = eval::Manhattan,
           class TEdgeEval = eval::Euclidean, class TPos = Position>
-class AstarFinder : public FinderBase<AstarFinder<TDrived>, TPos> {
+class AstarFinder
+    : public FinderBase<
+          AstarFinder<TDrived, TWeighted, TEstimateEval, TEdgeEval, TPos>,
+          TPos> {
  private:
-  using BASE = FinderBase<AstarFinder<TDrived>, TPos>;
+  using BASE = FinderBase<
+      AstarFinder<TDrived, TWeighted, TEstimateEval, TEdgeEval, TPos>, TPos>;
 
  public:
   virtual std::pair<PathResult, std::shared_ptr<Path<TPos>>> findPathImpl(
@@ -45,9 +51,10 @@ class AstarFinder : public FinderBase<AstarFinder<TDrived>, TPos> {
     auto startTime = std::chrono::steady_clock::now();
 
     // compare function for priority queue, sort Node
-    // from lowest cost to largest cost
     auto pq_cmp = [](const Node &a, const Node &b) {
-      return (a.gCost + a.hCost) > (b.gCost + b.hCost);
+      // from lowest cost to largest cost
+      return TWeighted::combine(a.gCost, a.hCost) >
+             TWeighted::combine(b.gCost, b.hCost);
     };
     std::priority_queue<Node, std::vector<Node>, decltype(pq_cmp)> pq(pq_cmp);
 
@@ -125,7 +132,8 @@ class AstarFinder : public FinderBase<AstarFinder<TDrived>, TPos> {
             if (newGCost < PreGCost) {
               found_it->second.parent = parent;
               found_it->second.gCost = newGCost;
-              pq.push({newPos, newGCost, found_it->second.hCost});  // lazy deletion
+              pq.push(
+                  {newPos, newGCost, found_it->second.hCost});  // lazy deletion
             }
           } else {
             CostT newHCost = TEstimateEval::eval(newPos, to);

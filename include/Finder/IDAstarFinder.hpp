@@ -10,14 +10,20 @@
 #include "Finder/FinderBase.hpp"
 #include "Type.hpp"
 #include "Vec3.hpp"
+#include "Weighted/Weighted.hpp"
 
 namespace pathfinding {
 
-template <class TDrived, class TEstimateEval = eval::Manhattan,
+template <class TDrived, class TWeighted = weight::ConstWeighted<>,
+          class TEstimateEval = eval::Manhattan,
           class TEdgeEval = eval::Euclidean, class TPos = Position>
-class IDAstarFinder : public FinderBase<IDAstarFinder<TDrived>, TPos> {
+class IDAstarFinder
+    : public FinderBase<
+          IDAstarFinder<TDrived, TWeighted, TEstimateEval, TEdgeEval, TPos>,
+          TPos> {
  private:
-  using BASE = FinderBase<IDAstarFinder<TDrived>, TPos>;
+  using BASE = FinderBase<
+      IDAstarFinder<TDrived, TWeighted, TEstimateEval, TEdgeEval, TPos>, TPos>;
 
  public:
   virtual std::pair<PathResult, std::shared_ptr<Path<TPos>>> findPathImpl(
@@ -148,7 +154,8 @@ class IDAstarFinder : public FinderBase<IDAstarFinder<TDrived>, TPos> {
             addGCost = fallCost * (-newOffset.y);
 
           CostT newGCost = now.gCost + addGCost;
-          CostT newFCost = newGCost + TEstimateEval::eval(newPos, to);
+          CostT newFCost =
+              TWeighted::combine(newGCost, TEstimateEval::eval(newPos, to));
           if (newFCost <= costLimit) {
             st.push({newPos, 0, newGCost});
             visited.insert(newPos);
