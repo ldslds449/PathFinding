@@ -18,7 +18,20 @@ class RangeGoal : public GoalBase<TPos> {
                           (pos.y <= GoalBase<TPos>::goalPos.y + y_tol))) &&
            (z_tol < 0 || ((GoalBase<TPos>::goalPos.z - z_tol <= pos.z) &&
                           (pos.z <= GoalBase<TPos>::goalPos.z + z_tol)));
-  };
+  }
+
+  virtual std::vector<TPos> getPossibleGoalPosition() const final override {
+    using Tval = typename TPos::value_type;
+    std::vector<TPos> positions;
+    for (Tval i = -x_tol; i <= x_tol; ++i) {
+      for (Tval j = -y_tol; j <= y_tol; ++j) {
+        for (Tval k = -z_tol; k <= z_tol; ++k) {
+          positions.emplace_back(GoalBase<TPos>::goalPos.offset(i, j, k));
+        }
+      }
+    }
+    return positions;
+  }
 
   RangeGoal(const TPos &_goalPos, const typename TPos::value_type &_x_tol,
             const typename TPos::value_type &_y_tol,

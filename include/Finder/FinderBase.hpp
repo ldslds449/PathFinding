@@ -42,7 +42,9 @@ class FinderBase {
   }
 
   inline void findPathAndGo(const TPos &from, const goal::GoalBase<TPos> &goal,
-                            const U64 &timeLimit = 0, const int &retry = 5) {
+                            const U64 &timeLimit = 0,
+                            const bool &checkGoalState = false,
+                            const int &retry = 5) {
     auto run =
         [&](const TPos &nowFrom,
             const goal::GoalBase<TPos> &nowGoal) -> std::pair<bool, TPos> {
@@ -97,11 +99,13 @@ class FinderBase {
         lastPos = result.second;
       } else {
         // check whether we can stand on the goal block
-        if (getBlockType(goalPos).is(BlockType::DANGER) ||
-            getBlockType(goalPos).is(BlockType::AIR) ||
-            !getBlockType(goalPos.offset(0, 1, 0)).is(BlockType::AIR) ||
-            !getBlockType(goalPos.offset(0, 2, 0)).is(BlockType::AIR)) {
-          std::cout << "The goal is unsafe / air block / blocked" << std::endl
+        if (checkGoalState &&
+            (getBlockType(goalPos).is(BlockType::DANGER) ||
+             getBlockType(goalPos).is(BlockType::AIR) ||
+             !getBlockType(goalPos.offset(0, 1, 0)).is(BlockType::AIR) ||
+             !getBlockType(goalPos.offset(0, 2, 0)).is(BlockType::AIR))) {
+          std::cout << "The goal is unsafe / blocked / an air block"
+                    << std::endl
                     << std::flush;
           break;
         } else {

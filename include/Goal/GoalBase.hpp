@@ -1,6 +1,8 @@
 #ifndef PATHFINDING_GOAL_GOALBASE_H_
 #define PATHFINDING_GOAL_GOALBASE_H_
 
+#include <vector>
+
 namespace pathfinding {
 
 namespace goal {
@@ -11,6 +13,8 @@ class GoalBase {
   virtual bool isGoal(const TPos &pos) const = 0;
 
   const TPos &getGoalPosition() const { return goalPos; }
+
+  virtual std::vector<TPos> getPossibleGoalPosition() const = 0;
 
  protected:
   GoalBase(const TPos &_goalPos) : goalPos(_goalPos) {}
