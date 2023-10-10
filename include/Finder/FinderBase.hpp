@@ -42,7 +42,7 @@ class FinderBase {
   }
 
   inline void findPathAndGo(const TPos &from, const goal::GoalBase<TPos> &goal,
-                            const U64 &timeLimit = 0, const int &retry = 10) {
+                            const U64 &timeLimit = 0, const int &retry = 5) {
     auto run =
         [&](const TPos &nowFrom,
             const goal::GoalBase<TPos> &nowGoal) -> std::pair<bool, TPos> {
@@ -73,12 +73,13 @@ class FinderBase {
     };
 
     TPos lastPos = from, nowGoalPos;
+    const TPos &goalPos = goal.getGoalPosition();
     const int step = 2 * 16;  // 2 chunks
 
     for (int i = 0; i < retry; ++i) {
       // the goal is in a unload chunk
-      if (getBlockType(goal.getGoalPosition()).is(BlockType::UNKNOWN)) {
-        const TPos vec = goal.getGoalPosition() - lastPos;
+      if (getBlockType(goalPos).is(BlockType::UNKNOWN)) {
+        const TPos vec = goalPos - lastPos;
         const auto vecUnit =
             static_cast<const Vec3<double>>(vec) / std::sqrt(vec.squaredNorm());
 
@@ -86,7 +87,7 @@ class FinderBase {
         nowGoalPos.y = lastPos.y;
         nowGoalPos.z = lastPos.z + std::floor(vecUnit.z * step);
 
-        std::cout << "Position " << goal.getGoalPosition()
+        std::cout << "Position " << goalPos
                   << " is in a unload chunk, try to get closer " << nowGoalPos
                   << " to load the chunk." << std::endl
                   << std::flush;
@@ -95,8 +96,18 @@ class FinderBase {
         if (!result.first) break;
         lastPos = result.second;
       } else {
-        run(lastPos, goal);
-        break;
+        // check whether we can stand on the goal block
+        if (getBlockType(goalPos).is(BlockType::DANGER) ||
+            getBlockType(goalPos).is(BlockType::AIR) ||
+            !getBlockType(goalPos.offset(0, 1, 0)).is(BlockType::AIR) ||
+            !getBlockType(goalPos.offset(0, 2, 0)).is(BlockType::AIR)) {
+          std::cout << "The goal is unsafe / air block / blocked" << std::endl
+                    << std::flush;
+          break;
+        } else {
+          run(lastPos, goal);
+          break;
+        }
       }
     }
   }
