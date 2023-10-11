@@ -27,26 +27,30 @@ class IDAstarFinder
 
  public:
   virtual std::pair<PathResult, std::shared_ptr<Path<TPos>>> findPathImpl(
-      const TPos &from, const goal::GoalBase<TPos> &goal,
-      const U64 &timeLimit) const override {
+      const TPos &from, const goal::GoalBase<TPos> &goal, const U64 &timeLimit,
+      const U64 &nodeLimit) const override {
     CostT costLimit = TEstimateEval::eval(from, goal.getGoalPosition());
-    U64 nowTimeLimit = timeLimit;
+    U64 nowTimeLimit = timeLimit, nowNodeLimit = nodeLimit;
     while (true) {
       auto start = std::chrono::steady_clock::now();
-      auto r = AstarWithCostLimit(from, goal, nowTimeLimit, costLimit);
+      auto r =
+          AstarWithCostLimit(from, goal, nowTimeLimit, nowNodeLimit, costLimit);
       auto end = std::chrono::steady_clock::now();
       if (std::get<0>(r) == PathResult::FOUND)
         return {PathResult::FOUND, std::get<1>(r)};  // found
-      if (std::get<0>(r) == PathResult::NOT_FOUND &&
-          std::get<2>(r) == costLimit)
+      else if (std::get<0>(r) == PathResult::NOT_FOUND &&
+               std::get<2>(r) == costLimit)
         return {PathResult::NOT_FOUND, std::get<1>(r)};  // not found
-      if (std::get<0>(r) == PathResult::TIME_LIMIT_EXCEED)
+      else if (std::get<0>(r) == PathResult::TIME_LIMIT_EXCEED)
         return {PathResult::TIME_LIMIT_EXCEED, std::get<1>(r)};
+      else if (std::get<0>(r) == PathResult::NODE_SEARCH_LIMIT_EXCEED)
+        return {PathResult::NODE_SEARCH_LIMIT_EXCEED, std::get<1>(r)};
       costLimit = std::get<2>(r);
       std::cout << "Path not found, set cost limit to " << costLimit << "\n";
       nowTimeLimit -=
           std::chrono::duration_cast<std::chrono::milliseconds>(end - start)
               .count();
+      nowNodeLimit -= std::get<3>(r);
     }
   }
 
@@ -62,9 +66,10 @@ class IDAstarFinder
   finderConfig config;
 
  protected:
-  std::tuple<PathResult, std::shared_ptr<Path<TPos>>, CostT> AstarWithCostLimit(
-      const TPos &from, const goal::GoalBase<TPos> &goal, const U64 &timeLimit,
-      const CostT &costLimit) const {
+  std::tuple<PathResult, std::shared_ptr<Path<TPos>>, CostT, U64>
+  AstarWithCostLimit(const TPos &from, const goal::GoalBase<TPos> &goal,
+                     const U64 &timeLimit, const U64 &nodeLimit,
+                     const CostT &costLimit) const {
     struct Node {
       TPos pos;
       short dirIdx;
@@ -108,8 +113,9 @@ class IDAstarFinder
 
     // for loop to find a path to goal
     TPos last;
-    bool found = false, timeUp = false;
+    bool found = false, timeUp = false, nodeSearchExceed = false;
     CostT minExceedCost = std::numeric_limits<CostT>::max();  // maximum
+    U64 nodeCount = 0;
     while (!st.empty()) {
       auto now = st.top();
       st.pop();
@@ -133,6 +139,13 @@ class IDAstarFinder
         st.push({now.pos, static_cast<short>(now.dirIdx + 1)});
       }
 
+      // record node count
+      nodeCount++;
+      if (nodeLimit > 0 && nodeCount >= nodeLimit) {
+        nodeSearchExceed = true;
+        break;
+      }
+
       // check jump
       bool canJump =
           BASE::getBlockType(now.pos + TPos{0, 3, 0}).is(BlockType::AIR);
@@ -154,7 +167,8 @@ class IDAstarFinder
         CostT newFCost =
             TWeighted::combine(newGCost, TEstimateEval::eval(newPos, to));
 
-        // whether we visited it before, or we find another path but with less G cost
+        // whether we visited it before, or we find another path but with less G
+        // cost
         auto it = gCost.find(newPos);
         if (it == gCost.end() || it->second > newGCost) {
           if (newFCost <= costLimit) {
@@ -177,14 +191,17 @@ class IDAstarFinder
         st.pop();
       }
       path->reverse();
-      return {PathResult::FOUND, path, 0};
+      return {PathResult::FOUND, path, 0, nodeCount};
     } else if (timeUp) {
-      return {PathResult::TIME_LIMIT_EXCEED, path, 0};
+      return {PathResult::TIME_LIMIT_EXCEED, path, 0, nodeCount};
+    } else if (nodeSearchExceed) {
+      return {PathResult::NODE_SEARCH_LIMIT_EXCEED, path, 0, nodeCount};
     } else {
       return {
           PathResult::NOT_FOUND, path,
           (minExceedCost == std::numeric_limits<CostT>::max() ? costLimit
-                                                              : minExceedCost)};
+                                                              : minExceedCost),
+          nodeCount};
     }
   }
 };

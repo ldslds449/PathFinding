@@ -25,8 +25,8 @@ class AstarFinder
 
  public:
   virtual std::pair<PathResult, std::shared_ptr<Path<TPos>>> findPathImpl(
-      const TPos &from, const goal::GoalBase<TPos> &goal,
-      const U64 &timeLimit) const override {
+      const TPos &from, const goal::GoalBase<TPos> &goal, const U64 &timeLimit,
+      const U64 &nodeLimit) const override {
     // a node in A*
     struct Node {
       TPos pos;
@@ -86,7 +86,8 @@ class AstarFinder
 
     // for loop to find a path to goal
     Node now, last;
-    bool found = false, timeUp = false;
+    bool found = false, timeUp = false, nodeSearchExceed = false;
+    U64 nodeCount = 0;
     while (!pq.empty()) {
       Node pre = now;
       now = pq.top();
@@ -104,6 +105,12 @@ class AstarFinder
       // check if this node has visited before
       auto &posInfo = infoTable[now.pos];
       if (now.gCost > posInfo.gCost) continue;
+      // record node count
+      nodeCount++;
+      if (nodeLimit > 0 && nodeCount >= nodeLimit) {
+        nodeSearchExceed = true;
+        break;
+      }
 
       // check jump
       bool canJump =
@@ -158,6 +165,8 @@ class AstarFinder
       return {PathResult::FOUND, path};
     } else if (timeUp) {
       return {PathResult::TIME_LIMIT_EXCEED, path};
+    } else if (nodeSearchExceed) {
+      return {PathResult::NODE_SEARCH_LIMIT_EXCEED, path};
     } else {
       return {PathResult::NOT_FOUND, path};
     }

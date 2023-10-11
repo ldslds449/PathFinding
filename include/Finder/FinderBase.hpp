@@ -7,9 +7,9 @@
 #include <memory>
 #include <regex>
 #include <string>
+#include <unordered_map>
 #include <utility>
 #include <vector>
-#include <unordered_map>
 
 #include "BlockType.hpp"
 #include "Goal/Goal.hpp"
@@ -18,7 +18,12 @@
 
 namespace pathfinding {
 
-enum PathResult { FOUND, NOT_FOUND, TIME_LIMIT_EXCEED };
+enum PathResult {
+  FOUND,
+  NOT_FOUND,
+  TIME_LIMIT_EXCEED,
+  NODE_SEARCH_LIMIT_EXCEED
+};
 
 template <class TDrived, class TPos>
 class FinderBase {
@@ -28,9 +33,9 @@ class FinderBase {
    */
   inline std::pair<PathResult, std::shared_ptr<Path<TPos>>> findPath(
       const TPos &from, const goal::GoalBase<TPos> &goal,
-      const U64 &timeLimit = 0) const {
-    return static_cast<const TDrived *>(this)->findPathImpl(from, goal,
-                                                            timeLimit);
+      const U64 &timeLimit = 0, const U64 &nodeLimit = 0) const {
+    return static_cast<const TDrived *>(this)->findPathImpl(
+        from, goal, timeLimit, nodeLimit);
   }
 
   /*
@@ -43,14 +48,14 @@ class FinderBase {
   }
 
   inline void findPathAndGo(const TPos &from, const goal::GoalBase<TPos> &goal,
-                            const U64 &timeLimit = 0,
+                            const U64 &timeLimit = 0, const U64 &nodeLimit = 0,
                             const bool &checkGoalState = false,
                             const int &retry = 5) {
     auto run =
         [&](const TPos &nowFrom,
             const goal::GoalBase<TPos> &nowGoal) -> std::pair<bool, TPos> {
       auto t1 = std::chrono::steady_clock::now();
-      auto r = findPath(nowFrom, nowGoal, timeLimit);
+      auto r = findPath(nowFrom, nowGoal, timeLimit, nodeLimit);
       auto t2 = std::chrono::steady_clock::now();
       auto path = r.second;
 
@@ -66,6 +71,8 @@ class FinderBase {
           std::cout << "Path Not Found" << std::endl << std::flush;
         } else if (r.first == PathResult::TIME_LIMIT_EXCEED) {
           std::cout << "Time Limit Exceed" << std::endl << std::flush;
+        } else if (r.first == PathResult::NODE_SEARCH_LIMIT_EXCEED) {
+          std::cout << "Node Search Limit Exceed" << std::endl << std::flush;
         }
         return {false, TPos()};
       }
@@ -166,8 +173,8 @@ class FinderBase {
    * This should be implemented in subclass
    */
   virtual std::pair<PathResult, std::shared_ptr<Path<TPos>>> findPathImpl(
-      const TPos &from, const goal::GoalBase<TPos> &goal,
-      const U64 &timeLimit) const = 0;
+      const TPos &from, const goal::GoalBase<TPos> &goal, const U64 &timeLimit,
+      const U64 &nodeLimit) const = 0;
 
   bool goImpl(const std::shared_ptr<Path<TPos>> &path) {
     auto &pathVec = path->get();
