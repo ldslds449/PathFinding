@@ -9,6 +9,7 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include <unordered_map>
 
 #include "BlockType.hpp"
 #include "Goal/Goal.hpp"

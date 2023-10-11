@@ -68,7 +68,6 @@ class IDAstarFinder
     struct Node {
       TPos pos;
       short dirIdx;
-      CostT gCost;
     };
 
     // direction to generate next node
@@ -85,9 +84,9 @@ class IDAstarFinder
     // time limit
     auto startTime = std::chrono::steady_clock::now();
 
-    // visited table
+    // G cost table
     auto set_hash = [](const TPos &a) { return a.hash(); };
-    std::unordered_set<TPos, decltype(set_hash)> visited(23, set_hash);
+    std::unordered_map<TPos, CostT, decltype(set_hash)> gCost(23, set_hash);
 
     // directions for selecting neighbours
     std::vector<Direction> directions;
@@ -104,8 +103,8 @@ class IDAstarFinder
     const CostT fallCost = TEdgeEval::eval(TPos{0, 1, 0});
 
     // add initial state
-    st.push({from, 0, 0});
-    visited.insert(from);
+    st.push({from, 0});
+    gCost[from] = 0;
 
     // for loop to find a path to goal
     TPos last;
@@ -131,7 +130,7 @@ class IDAstarFinder
       if (now.dirIdx >= directions.size()) {
         continue;
       } else {
-        st.push({now.pos, static_cast<short>(now.dirIdx + 1), now.gCost});
+        st.push({now.pos, static_cast<short>(now.dirIdx + 1)});
       }
 
       // check jump
@@ -145,20 +144,22 @@ class IDAstarFinder
                                             config.fallingDamageTolerance);
       if (newOffset.abs().sum() > 0) {
         const TPos newPos = now.pos + newOffset;
-        // whether we visited it before
-        if (visited.count(newPos) == 0) {
-          CostT addGCost = dir.cost;
-          if (newOffset.y > 0)
-            addGCost = dir.upCost;
-          else if (newOffset.y < 0)
-            addGCost = fallCost * (-newOffset.y);
+        CostT addGCost = dir.cost;
+        if (newOffset.y > 0)
+          addGCost = dir.upCost;
+        else if (newOffset.y < 0)
+          addGCost = fallCost * (-newOffset.y);
 
-          CostT newGCost = now.gCost + addGCost;
-          CostT newFCost =
-              TWeighted::combine(newGCost, TEstimateEval::eval(newPos, to));
+        CostT newGCost = gCost[now.pos] + addGCost;
+        CostT newFCost =
+            TWeighted::combine(newGCost, TEstimateEval::eval(newPos, to));
+
+        // whether we visited it before, or we find another path but with less G cost
+        auto it = gCost.find(newPos);
+        if (it == gCost.end() || it->second > newGCost) {
           if (newFCost <= costLimit) {
-            st.push({newPos, 0, newGCost});
-            visited.insert(newPos);
+            st.push({newPos, 0});
+            gCost[newPos] = newGCost;
           } else {
             minExceedCost = std::min(minExceedCost, newFCost);
           }
