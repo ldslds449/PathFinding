@@ -73,6 +73,8 @@ class IDAstarFinder
     struct Node {
       TPos pos;
       short dirIdx;
+      Node(const TPos &p, const short &d) : pos(p), dirIdx(d) {}
+      Node() = default;
     };
 
     // direction to generate next node
@@ -90,8 +92,7 @@ class IDAstarFinder
     auto startTime = std::chrono::steady_clock::now();
 
     // G cost table
-    auto set_hash = [](const TPos &a) { return a.hash(); };
-    std::unordered_map<TPos, CostT, decltype(set_hash)> gCost(23, set_hash);
+    std::unordered_map<TPos, CostT> gCost;
 
     // directions for selecting neighbours
     std::vector<Direction> directions;
@@ -108,7 +109,7 @@ class IDAstarFinder
     const CostT fallCost = TEdgeEval::eval(TPos{0, 1, 0});
 
     // add initial state
-    st.push({from, 0});
+    st.emplace(from, 0);
     gCost[from] = 0;
 
     // for loop to find a path to goal
@@ -136,7 +137,7 @@ class IDAstarFinder
       if (now.dirIdx >= directions.size()) {
         continue;
       } else {
-        st.push({now.pos, static_cast<short>(now.dirIdx + 1)});
+        st.emplace(now.pos, static_cast<short>(now.dirIdx + 1));
       }
 
       // record node count
@@ -172,7 +173,7 @@ class IDAstarFinder
         auto it = gCost.find(newPos);
         if (it == gCost.end() || it->second > newGCost) {
           if (newFCost <= costLimit) {
-            st.push({newPos, 0});
+            st.emplace(newPos, 0);
             gCost[newPos] = newGCost;
           } else {
             minExceedCost = std::min(minExceedCost, newFCost);

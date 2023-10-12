@@ -31,6 +31,9 @@ class AstarFinder
     struct Node {
       TPos pos;
       CostT gCost, hCost;
+      Node(const TPos &p, const CostT &g, const CostT &h)
+          : pos(p), gCost(g), hCost(h) {}
+      Node() = default;
     };
 
     // record the information of a node
@@ -58,12 +61,9 @@ class AstarFinder
     };
     std::priority_queue<Node, std::vector<Node>, decltype(pq_cmp)> pq(pq_cmp);
 
-    // hash function for unordered map
-    auto map_hash = [](const TPos &a) { return a.hash(); };
     // key: Position
     // value: {Parent, gCost of key, hCost of key}
-    std::unordered_map<TPos, PosInfo, decltype(map_hash)> infoTable(
-        23, map_hash);  // 23: initial bucket count
+    std::unordered_map<TPos, PosInfo> infoTable;
 
     // directions for selecting neighbours
     std::vector<Direction> directions;
@@ -80,7 +80,7 @@ class AstarFinder
     const CostT fallCost = TEdgeEval::eval(TPos{0, 1, 0});
 
     // add initial state
-    pq.push({from, 0, TEstimateEval::eval(from, to)});
+    pq.emplace(from, 0, TEstimateEval::eval(from, to));
     // gCost and hCost are useless
     infoTable[from] = {from, 0, 0};
 
@@ -139,12 +139,12 @@ class AstarFinder
             if (newGCost < PreGCost) {
               found_it->second.parent = parent;
               found_it->second.gCost = newGCost;
-              pq.push(
-                  {newPos, newGCost, found_it->second.hCost});  // lazy deletion
+              pq.emplace(newPos, newGCost,
+                         found_it->second.hCost);  // lazy deletion
             }
           } else {
             CostT newHCost = TEstimateEval::eval(newPos, to);
-            pq.push({newPos, newGCost, newHCost});
+            pq.emplace(newPos, newGCost, newHCost);
             infoTable[newPos] = {parent, newGCost, newHCost};
           }
         }

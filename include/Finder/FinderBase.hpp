@@ -219,7 +219,7 @@ class FinderBase {
 
   virtual std::vector<BlockType> getBlockTypeImpl(
       const std::vector<TPos> &pos) const {
-    const std::vector<std::string> blockNames = getBlockName(pos);
+    const std::vector<std::string> &blockNames = getBlockName(pos);
     std::vector<BlockType> blockTypes;
     for (const std::string &name : blockNames) {
       blockTypes.push_back(getBlockTypeImpl(name));
@@ -309,7 +309,7 @@ class FinderBase {
       X_UP2,
       X_UP3,
     };
-    const std::vector<BlockType> blockTypes = getBlockType(blocksPos);
+    const std::vector<BlockType> &blockTypes = getBlockType(blocksPos);
 
     // unknown, always can not walk to
     if (blockTypes[COORD::FLOOR].is(BlockType::UNKNOWN)) {

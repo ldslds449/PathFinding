@@ -144,7 +144,11 @@ class Vec3 {
   }
 
   inline std::size_t hash() const {
-    return std::hash<T>{}(x) ^ std::hash<T>{}(y << 1) ^ std::hash<T>{}(z << 2);
+    std::hash<T> hasher;
+    std::size_t value = hasher(x);
+    value ^= hasher(y) + 0x9e3779b9 + (value << 6) + (value >> 2);
+    value ^= hasher(z) + 0x9e3779b9 + (value << 6) + (value >> 2);
+    return value;
   }
 
   friend std::ostream &operator<<(std::ostream &os, const Vec3<T> &vec3) {
@@ -156,5 +160,16 @@ class Vec3 {
 using Position = Vec3<int>;
 
 }  // namespace pathfinding
+
+namespace std {
+
+template <typename T>
+struct hash<pathfinding::Vec3<T>> {
+  inline std::size_t operator()(const pathfinding::Vec3<T> &v) const {
+    return v.hash();
+  }
+};
+
+}  // namespace std
 
 #endif  // PATHFINDING_VEC3_H_

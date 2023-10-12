@@ -1,6 +1,8 @@
 #ifndef PATHFINDING_EVALUATE_EUCLIDEAN_H_
 #define PATHFINDING_EVALUATE_EUCLIDEAN_H_
 
+#include <cmath>
+
 #include "EvaluateBase.hpp"
 
 namespace pathfinding {
@@ -11,7 +13,7 @@ class Euclidean final : public EvaluateBase<Euclidean> {
  public:
   template <class TPos>
   static CostT evalImpl(const TPos &pos, const TPos &target) {
-    return pos.template squaredEuclideanDist<CostT>(target);
+    return std::sqrt(pos.template squaredEuclideanDist<CostT>(target));
   };
 
   Euclidean() = delete;
