@@ -13,7 +13,13 @@ class ConstWeighted final
     : public WeightedBase<ConstWeighted<GWeight, HWeight>> {
  public:
   inline static CostT combineImpl(const CostT &g, const CostT &h) {
-    return g * static_cast<CostT>(GWeight) + h * static_cast<CostT>(HWeight);
+    if constexpr (GWeight == 1 && HWeight == 1) {
+      return g + h;
+    } else if constexpr (GWeight == 1) {
+      return g + h * static_cast<CostT>(HWeight);
+    } else if constexpr (HWeight == 1) {
+      return g * static_cast<CostT>(GWeight) + h;
+    }
   };
 
   ConstWeighted() = delete;
