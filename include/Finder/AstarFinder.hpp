@@ -86,16 +86,30 @@ class AstarFinder
 
     // for loop to find a path to goal
     Node now, last;
-    bool found = false, timeUp = false, nodeSearchExceed = false;
+    bool found = false, foundSuitable = false;
+    bool timeUp = false, nodeSearchExceed = false;
     U64 nodeCount = 0;
     while (!pq.empty()) {
       Node pre = now;
       now = pq.top();
       pq.pop();
       if (goal.isGoal(now.pos)) {
-        last = now;
-        found = true;
-        break;
+        if (now.pos == to) {
+          found = true;
+          last = now;
+          break;
+        } else if (foundSuitable) {
+          auto origYdiff = std::abs(last.pos.y - to.y);
+          auto newYdiff = std::abs(now.pos.y - to.y);
+          if ((origYdiff > newYdiff) ||
+              (origYdiff == newYdiff &&
+               TEstimateEval::eval(now.pos) < TEstimateEval::eval(last.pos))) {
+            last = now;
+          }
+        } else {
+          foundSuitable = true;
+          last = now;
+        }
       }
       // check if time is up
       if (BASE::isTimeUp(startTime, timeLimit)) {
@@ -153,7 +167,7 @@ class AstarFinder
 
     // back tracking to get the whole path
     std::shared_ptr<Path<TPos>> path = std::make_shared<Path<TPos>>();
-    if (found) {
+    if (found || foundSuitable) {
       TPos nowPos = last.pos;
       while (true) {
         path->add(nowPos);

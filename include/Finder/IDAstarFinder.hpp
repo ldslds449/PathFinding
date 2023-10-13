@@ -116,7 +116,8 @@ class IDAstarFinder
 
     // for loop to find a path to goal
     TPos last;
-    bool found = false, timeUp = false, nodeSearchExceed = false;
+    bool found = false, foundSuitable = false;
+    bool timeUp = false, nodeSearchExceed = false;
     CostT minExceedCost = std::numeric_limits<CostT>::max();  // maximum
     U64 nodeCount = 0;
     while (!st.empty()) {
@@ -124,11 +125,22 @@ class IDAstarFinder
 
       // check whether we reach the goal
       if (goal.isGoal(now.pos)) {
-        st.pop();
-        stackList.erase(now.pos);
-        last = now.pos;
-        found = true;
-        break;
+        if (now.pos == to) {
+          last = now.pos;
+          found = true;
+          break;
+        } else if (foundSuitable) {
+          auto origYdiff = std::abs(last.pos.y - to.y);
+          auto newYdiff = std::abs(now.pos.y - to.y);
+          if ((origYdiff > newYdiff) ||
+              (origYdiff == newYdiff &&
+               TEstimateEval::eval(now.pos) < TEstimateEval::eval(last.pos))) {
+            last = now;
+          }
+        } else {
+          foundSuitable = true;
+          last = now;
+        }
       }
 
       if (BASE::isTimeUp(startTime, timeLimit)) {
@@ -187,8 +199,7 @@ class IDAstarFinder
 
     // back tracking to get the whole path
     std::shared_ptr<Path<TPos>> path = std::make_shared<Path<TPos>>();
-    if (found) {
-      path->add(last);
+    if (found || foundSuitable) {
       while (!st.empty()) {
         const TPos &nowPos = st.top().pos;
         path->add(nowPos);
