@@ -183,7 +183,9 @@ class FinderBase {
       const TPos &prevPos = pathVec[i - 1], &newPos = pathVec[i],
                  diffPos = newPos - prevPos;
       std::cout << "From: " << prevPos << " To: " << newPos
-                << " Diff: " << diffPos << std::endl;
+                << " Diff: " << diffPos << " (" << i << "/" << path->size()
+                << ")" << std::endl
+                << std::flush;
       bool r = playerMove(diffPos);
       if (!r) return false;
     }

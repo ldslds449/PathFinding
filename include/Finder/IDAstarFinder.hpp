@@ -72,8 +72,10 @@ class IDAstarFinder
                      const CostT &costLimit) const {
     struct Node {
       TPos pos;
+      CostT gcost;
       short dirIdx;
-      Node(const TPos &p, const short &d) : pos(p), dirIdx(d) {}
+      Node(const TPos &p, const CostT &g, const short &d)
+          : pos(p), gcost(g), dirIdx(d) {}
       Node() = default;
     };
 
@@ -91,8 +93,8 @@ class IDAstarFinder
     // time limit
     auto startTime = std::chrono::steady_clock::now();
 
-    // G cost table
-    std::unordered_map<TPos, CostT> gCost;
+    // stack table
+    std::unordered_set<TPos> stackList;
 
     // directions for selecting neighbours
     std::vector<Direction> directions;
@@ -109,8 +111,8 @@ class IDAstarFinder
     const CostT fallCost = TEdgeEval::eval(TPos{0, 1, 0});
 
     // add initial state
-    st.emplace(from, 0);
-    gCost[from] = 0;
+    st.emplace(from, 0, 0);
+    stackList.insert(from);
 
     // for loop to find a path to goal
     TPos last;
@@ -119,10 +121,11 @@ class IDAstarFinder
     U64 nodeCount = 0;
     while (!st.empty()) {
       auto now = st.top();
-      st.pop();
 
       // check whether we reach the goal
       if (goal.isGoal(now.pos)) {
+        st.pop();
+        stackList.erase(now.pos);
         last = now.pos;
         found = true;
         break;
@@ -135,9 +138,11 @@ class IDAstarFinder
 
       // whether we visit all children
       if (now.dirIdx >= directions.size()) {
+        st.pop();
+        stackList.erase(now.pos);
         continue;
       } else {
-        st.emplace(now.pos, static_cast<short>(now.dirIdx + 1));
+        st.top().dirIdx++;
       }
 
       // record node count
@@ -164,17 +169,15 @@ class IDAstarFinder
         else if (newOffset.y < 0)
           addGCost = fallCost * (-newOffset.y);
 
-        CostT newGCost = gCost[now.pos] + addGCost;
+        CostT newGCost = now.gcost + addGCost;
         CostT newFCost =
             TWeighted::combine(newGCost, TEstimateEval::eval(newPos, to));
 
-        // whether we visited it before, or we find another path but with less G
-        // cost
-        auto it = gCost.find(newPos);
-        if (it == gCost.end() || it->second > newGCost) {
+        // whether the child is in the pv
+        if (stackList.count(newPos) == 0) {
           if (newFCost <= costLimit) {
-            st.emplace(newPos, 0);
-            gCost[newPos] = newGCost;
+            st.emplace(newPos, newGCost, 0);
+            stackList.insert(newPos);
           } else {
             minExceedCost = std::min(minExceedCost, newFCost);
           }
