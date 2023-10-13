@@ -176,7 +176,7 @@ class FinderBase {
       const TPos &from, const goal::GoalBase<TPos> &goal, const U64 &timeLimit,
       const U64 &nodeLimit) const = 0;
 
-  bool goImpl(const std::shared_ptr<Path<TPos>> &path) {
+  bool goImpl(const std::shared_ptr<Path<TPos>> &path, const int &retry = 3) {
     auto &pathVec = path->get();
     // skip first position
     for (int i = 1; i < pathVec.size(); ++i) {
@@ -186,8 +186,16 @@ class FinderBase {
                 << " Diff: " << diffPos << " (" << i << "/" << path->size()
                 << ")" << std::endl
                 << std::flush;
-      bool r = playerMove(diffPos);
-      if (!r) return false;
+      bool r;
+      int retryTime = 0;
+      do {
+        r = playerMove(diffPos);
+        retryTime++;
+      } while (!r && retryTime <= retry);
+      if (!r) {
+        std::cout << "Move Failed !" << std::endl << std::flush;
+        return false;
+      }
     }
     return true;
   }
