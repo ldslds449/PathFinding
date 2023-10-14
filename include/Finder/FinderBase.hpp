@@ -10,6 +10,7 @@
 #include <unordered_map>
 #include <utility>
 #include <vector>
+#include <thread>
 
 #include "BlockType.hpp"
 #include "Goal/Goal.hpp"
@@ -116,8 +117,8 @@ class FinderBase {
   /*
    * Ask the player to move
    */
-  inline bool playerMove(const TPos &vec) {
-    return static_cast<TDrived *>(this)->playerMoveImpl(vec);
+  inline bool playerMove(const TPos &from, const TPos &to) {
+    return static_cast<TDrived *>(this)->playerMoveImpl(from, to);
   }
 
   /*
@@ -172,13 +173,15 @@ class FinderBase {
       const TPos &prevPos = pathVec[i - 1], &newPos = pathVec[i],
                  diffPos = newPos - prevPos;
       std::cout << "From: " << prevPos << " To: " << newPos
-                << " Diff: " << diffPos << " (" << i+1 << "/" << path->size()
+                << " Diff: " << diffPos << " (" << i + 1 << "/" << path->size()
                 << ")" << std::endl
                 << std::flush;
-      bool r;
+      bool r = true;
       int retryTime = 0;
       do {
-        r = playerMove(diffPos);
+        if (!r)
+          std::this_thread::sleep_for(std::chrono::milliseconds(50));  // 1 tick
+        r = playerMove(prevPos, newPos);
         retryTime++;
       } while (!r && retryTime <= retry);
       if (!r) {
@@ -192,7 +195,7 @@ class FinderBase {
   /*
    * This should be implemented in subclass
    */
-  virtual bool playerMoveImpl(const TPos &vec) = 0;
+  virtual bool playerMoveImpl(const TPos &from, const TPos &to) = 0;
 
   /*
    * This should be implemented in subclass

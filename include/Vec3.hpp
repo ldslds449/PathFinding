@@ -33,6 +33,10 @@ class Vec3 {
     return (x == target.x) && (y == target.y) && (z == target.z);
   }
 
+  bool operator!=(const Vec3<T> &target) const {
+    return (x != target.x) || (y != target.y) || (z != target.z);
+  }
+
   Vec3<T> &operator=(const Vec3<T> &target) {
     x = target.x;
     y = target.y;
