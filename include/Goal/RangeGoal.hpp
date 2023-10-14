@@ -11,7 +11,7 @@ namespace goal {
 template <class TPos = Position>
 class RangeGoal : public GoalBase<TPos> {
  public:
-  virtual bool isGoal(const TPos &pos) const final override {
+  virtual bool isSuitableGoal(const TPos &pos) const final override {
     return (x_tol < 0 || ((GoalBase<TPos>::goalPos.x - x_tol <= pos.x) &&
                           (pos.x <= GoalBase<TPos>::goalPos.x + x_tol))) &&
            (y_tol < 0 || ((GoalBase<TPos>::goalPos.y - y_tol <= pos.y) &&

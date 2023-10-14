@@ -33,9 +33,10 @@ class FinderBase {
    */
   inline std::pair<PathResult, std::shared_ptr<Path<TPos>>> findPath(
       const TPos &from, const goal::GoalBase<TPos> &goal,
-      const U64 &timeLimit = 0, const U64 &nodeLimit = 0) const {
+      const U64 &timeLimit = 0, const U64 &nodeLimit = 0,
+      const U64 &extraTimeLimit = 100) const {
     return static_cast<const TDrived *>(this)->findPathImpl(
-        from, goal, timeLimit, nodeLimit);
+        from, goal, timeLimit, nodeLimit, extraTimeLimit);
   }
 
   /*
@@ -49,7 +50,7 @@ class FinderBase {
 
   inline void findPathAndGo(const TPos &from, const goal::GoalBase<TPos> &goal,
                             const U64 &timeLimit = 0, const U64 &nodeLimit = 0,
-                            const bool &checkGoalState = false,
+                            const U64 &extraTimeLimit = 100,
                             const int &retry = 5) {
     auto run =
         [&](const TPos &nowFrom,
@@ -106,20 +107,8 @@ class FinderBase {
         if (!result.first) break;
         lastPos = result.second;
       } else {
-        // check whether we can stand on the goal block
-        if (checkGoalState &&
-            (getBlockType(goalPos).is(BlockType::DANGER) ||
-             getBlockType(goalPos).is(BlockType::AIR) ||
-             !getBlockType(goalPos.offset(0, 1, 0)).is(BlockType::AIR) ||
-             !getBlockType(goalPos.offset(0, 2, 0)).is(BlockType::AIR))) {
-          std::cout << "The goal is unsafe / blocked / an air block"
-                    << std::endl
-                    << std::flush;
-          break;
-        } else {
-          run(lastPos, goal);
-          break;
-        }
+        run(lastPos, goal);
+        break;
       }
     }
   }
@@ -174,7 +163,7 @@ class FinderBase {
    */
   virtual std::pair<PathResult, std::shared_ptr<Path<TPos>>> findPathImpl(
       const TPos &from, const goal::GoalBase<TPos> &goal, const U64 &timeLimit,
-      const U64 &nodeLimit) const = 0;
+      const U64 &nodeLimit, const U64 &extraTimeLimit) const = 0;
 
   bool goImpl(const std::shared_ptr<Path<TPos>> &path, const int &retry = 3) {
     auto &pathVec = path->get();
@@ -280,8 +269,8 @@ class FinderBase {
   };
 
  protected:
-  bool isTimeUp(const std::chrono::steady_clock::time_point &start,
-                const U64 &timeLimit) const {
+  inline bool isTimeUp(const std::chrono::steady_clock::time_point &start,
+                       const U64 &timeLimit) const {
     if (timeLimit == 0) return false;
     auto now = std::chrono::steady_clock::now();
     return std::chrono::duration_cast<std::chrono::milliseconds>(now - start)
@@ -375,6 +364,13 @@ class FinderBase {
     }
 
     return TPos(0, 0, 0);
+  }
+
+  inline bool isGoalExist(const goal::GoalBase<TPos> &goal) const {
+    const TPos &p = goal.getGoalPosition();
+    return getBlockType(p).is(BlockType::SAFE) &&
+           getBlockType(p.offset(0, 1, 0)).is(BlockType::AIR) &&
+           getBlockType(p.offset(0, 2, 0)).is(BlockType::AIR);
   }
 
  private:

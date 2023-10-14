@@ -10,7 +10,7 @@ namespace goal {
 template <class TPos>
 class GoalBase {
  public:
-  virtual bool isGoal(const TPos &pos) const = 0;
+  virtual bool isSuitableGoal(const TPos &pos) const = 0;
 
   const TPos &getGoalPosition() const { return goalPos; }
 

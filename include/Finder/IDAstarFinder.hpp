@@ -28,13 +28,13 @@ class IDAstarFinder
  public:
   virtual std::pair<PathResult, std::shared_ptr<Path<TPos>>> findPathImpl(
       const TPos &from, const goal::GoalBase<TPos> &goal, const U64 &timeLimit,
-      const U64 &nodeLimit) const override {
+      const U64 &nodeLimit, const U64 &extraTimeLimit) const override {
     CostT costLimit = TEstimateEval::eval(from, goal.getGoalPosition());
     U64 nowTimeLimit = timeLimit, nowNodeLimit = nodeLimit;
     while (true) {
       auto start = std::chrono::steady_clock::now();
-      auto r =
-          AstarWithCostLimit(from, goal, nowTimeLimit, nowNodeLimit, costLimit);
+      auto r = AstarWithCostLimit(from, goal, nowTimeLimit, nowNodeLimit,
+                                  extraTimeLimit, costLimit);
       auto end = std::chrono::steady_clock::now();
       if (std::get<0>(r) == PathResult::FOUND)
         return {PathResult::FOUND, std::get<1>(r)};  // found
@@ -69,7 +69,7 @@ class IDAstarFinder
   std::tuple<PathResult, std::shared_ptr<Path<TPos>>, CostT, U64>
   AstarWithCostLimit(const TPos &from, const goal::GoalBase<TPos> &goal,
                      const U64 &timeLimit, const U64 &nodeLimit,
-                     const CostT &costLimit) const {
+                     const U64 &extraTimeLimit, const CostT &costLimit) const {
     struct Node {
       TPos pos;
       CostT gcost;
@@ -86,12 +86,14 @@ class IDAstarFinder
     };
 
     const TPos &to = goal.getGoalPosition();
+    const bool goalExist = BASE::isGoalExist(goal);
 
     // stack
     std::stack<Node> st;
 
     // time limit
     auto startTime = std::chrono::steady_clock::now();
+    decltype(startTime) extraStartTime;
 
     // stack table
     std::unordered_set<TPos> stackList;
@@ -124,27 +126,31 @@ class IDAstarFinder
       auto now = st.top();
 
       // check whether we reach the goal
-      if (goal.isGoal(now.pos)) {
+      if (goal.isSuitableGoal(now.pos)) {
         if (now.pos == to) {
           last = now.pos;
           found = true;
           break;
         } else if (foundSuitable) {
-          auto origYdiff = std::abs(last.pos.y - to.y);
-          auto newYdiff = std::abs(now.pos.y - to.y);
-          if ((origYdiff > newYdiff) ||
-              (origYdiff == newYdiff &&
-               TEstimateEval::eval(now.pos) < TEstimateEval::eval(last.pos))) {
+          if (TEstimateEval::eval(now.pos) < TEstimateEval::eval(last.pos)) {
             last = now;
           }
+        } else if (!goalExist) {
+          foundSuitable = true;
+          last = now;
+          break;
         } else {
           foundSuitable = true;
           last = now;
+          extraStartTime = std::chrono::steady_clock::now();
         }
       }
 
       if (BASE::isTimeUp(startTime, timeLimit)) {
         timeUp = true;
+        break;
+      }
+      if (foundSuitable && BASE::isTimeUp(extraStartTime, extraTimeLimit)) {
         break;
       }
 

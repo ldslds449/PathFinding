@@ -26,7 +26,7 @@ class AstarFinder
  public:
   virtual std::pair<PathResult, std::shared_ptr<Path<TPos>>> findPathImpl(
       const TPos &from, const goal::GoalBase<TPos> &goal, const U64 &timeLimit,
-      const U64 &nodeLimit) const override {
+      const U64 &nodeLimit, const U64 &extraTimeLimit) const override {
     // a node in A*
     struct Node {
       TPos pos;
@@ -49,9 +49,11 @@ class AstarFinder
     };
 
     const TPos &to = goal.getGoalPosition();
+    const bool goalExist = BASE::isGoalExist(goal);
 
     // time limit
     auto startTime = std::chrono::steady_clock::now();
+    decltype(startTime) extraStartTime;
 
     // compare function for priority queue, sort Node
     auto pq_cmp = [](const Node &a, const Node &b) {
@@ -93,20 +95,21 @@ class AstarFinder
       Node pre = now;
       now = pq.top();
       pq.pop();
-      if (goal.isGoal(now.pos)) {
+      if (goal.isSuitableGoal(now.pos)) {
         if (now.pos == to) {
           found = true;
           last = now;
           break;
         } else if (foundSuitable) {
-          auto origYdiff = std::abs(last.pos.y - to.y);
-          auto newYdiff = std::abs(now.pos.y - to.y);
-          if ((origYdiff > newYdiff) ||
-              (origYdiff == newYdiff &&
-               TEstimateEval::eval(now.pos) < TEstimateEval::eval(last.pos))) {
+          if (TEstimateEval::eval(now.pos) < TEstimateEval::eval(last.pos)) {
             last = now;
           }
+        } else if (!goalExist) {
+          foundSuitable = true;
+          last = now;
+          break;
         } else {
+          extraStartTime = std::chrono::steady_clock::now();
           foundSuitable = true;
           last = now;
         }
@@ -114,6 +117,9 @@ class AstarFinder
       // check if time is up
       if (BASE::isTimeUp(startTime, timeLimit)) {
         timeUp = true;
+        break;
+      }
+      if (foundSuitable && BASE::isTimeUp(extraStartTime, extraTimeLimit)) {
         break;
       }
       // check if this node has visited before
