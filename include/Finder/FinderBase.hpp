@@ -340,7 +340,7 @@ class FinderBase {
       return {TPos{0, 0, 0}};
     }
 
-    auto canPass = [](const BlockType &b)->bool {
+    auto canPass = [](const BlockType &b) -> bool {
       return b.is(BlockType::AIR) || b.is(BlockType::CAN_UP_DOWN) ||
              b.is(BlockType::CAN_UP) || b.is(BlockType::CAN_DOWN);
     };
@@ -348,8 +348,8 @@ class FinderBase {
     std::vector<TPos> possiblePos;
 
     // walk
-    if (isHorizontal && canPass(blockTypes[COORD::FLOOR_UP1]) &&
-        canPass(blockTypes[COORD::FLOOR_UP2]) &&
+    if (isHorizontal && blockTypes[COORD::FLOOR_UP1].is(BlockType::AIR) &&
+        blockTypes[COORD::FLOOR_UP2].is(BlockType::AIR) &&
         blockTypes[COORD::FLOOR].is(BlockType::SAFE)) {
       if (!isDiagonal || (canPass(blockTypes[COORD::X_UP1]) &&
                           canPass(blockTypes[COORD::X_UP2]) &&
@@ -363,7 +363,7 @@ class FinderBase {
     if (isHorizontal && canPass(blockTypes[COORD::FLOOR_UP2]) &&
         canPass(blockTypes[COORD::FLOOR_UP3]) &&
         blockTypes[COORD::FLOOR_UP1].is(BlockType::SAFE) &&
-        blockTypes[COORD::ORIG_UP1].is(BlockType::NONE) && canJump) {
+        blockTypes[COORD::ORIG_UP1].is(BlockType::AIR) && canJump) {
       if (!isDiagonal || (canPass(blockTypes[COORD::X_UP2]) &&
                           canPass(blockTypes[COORD::X_UP3]) &&
                           canPass(blockTypes[COORD::Z_UP2]) &&
