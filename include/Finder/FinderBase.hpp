@@ -340,31 +340,34 @@ class FinderBase {
       return {TPos{0, 0, 0}};
     }
 
+    auto canPass = [](const BlockType &b)->bool {
+      return b.is(BlockType::AIR) || b.is(BlockType::CAN_UP_DOWN) ||
+             b.is(BlockType::CAN_UP) || b.is(BlockType::CAN_DOWN);
+    };
+
     std::vector<TPos> possiblePos;
 
     // walk
-    if (isHorizontal && blockTypes[COORD::FLOOR_UP1].is(BlockType::AIR) &&
-        blockTypes[COORD::FLOOR_UP2].is(BlockType::AIR) &&
-        blockTypes[COORD::FLOOR].is(BlockType::SAFE) &&
-        blockTypes[COORD::FLOOR].is(BlockType::NONE)) {
-      if (!isDiagonal || (blockTypes[COORD::X_UP1].is(BlockType::AIR) &&
-                          blockTypes[COORD::X_UP2].is(BlockType::AIR) &&
-                          blockTypes[COORD::Z_UP1].is(BlockType::AIR) &&
-                          blockTypes[COORD::Z_UP2].is(BlockType::AIR))) {
+    if (isHorizontal && canPass(blockTypes[COORD::FLOOR_UP1]) &&
+        canPass(blockTypes[COORD::FLOOR_UP2]) &&
+        blockTypes[COORD::FLOOR].is(BlockType::SAFE)) {
+      if (!isDiagonal || (canPass(blockTypes[COORD::X_UP1]) &&
+                          canPass(blockTypes[COORD::X_UP2]) &&
+                          canPass(blockTypes[COORD::Z_UP1]) &&
+                          canPass(blockTypes[COORD::Z_UP2]))) {
         possiblePos.emplace_back(XZoffset);
       }
     }
 
     // walk + jump
-    if (isHorizontal && blockTypes[COORD::FLOOR_UP2].is(BlockType::AIR) &&
-        blockTypes[COORD::FLOOR_UP3].is(BlockType::AIR) &&
+    if (isHorizontal && canPass(blockTypes[COORD::FLOOR_UP2]) &&
+        canPass(blockTypes[COORD::FLOOR_UP3]) &&
         blockTypes[COORD::FLOOR_UP1].is(BlockType::SAFE) &&
-        blockTypes[COORD::FLOOR_UP1].is(BlockType::NONE) &&
         blockTypes[COORD::ORIG_UP1].is(BlockType::NONE) && canJump) {
-      if (!isDiagonal || (blockTypes[COORD::X_UP2].is(BlockType::AIR) &&
-                          blockTypes[COORD::X_UP3].is(BlockType::AIR) &&
-                          blockTypes[COORD::Z_UP2].is(BlockType::AIR) &&
-                          blockTypes[COORD::Z_UP3].is(BlockType::AIR))) {
+      if (!isDiagonal || (canPass(blockTypes[COORD::X_UP2]) &&
+                          canPass(blockTypes[COORD::X_UP3]) &&
+                          canPass(blockTypes[COORD::Z_UP2]) &&
+                          canPass(blockTypes[COORD::Z_UP3]))) {
         possiblePos.emplace_back(XZoffset + TPos{0, 1, 0});
       }
     }
@@ -373,12 +376,12 @@ class FinderBase {
     if (isHorizontal &&
         (blockTypes[COORD::FLOOR].is(BlockType::AIR) ||
          blockTypes[COORD::FLOOR].is(BlockType::FORCE_DOWN)) &&
-        blockTypes[COORD::FLOOR_UP1].is(BlockType::AIR) &&
-        blockTypes[COORD::FLOOR_UP2].is(BlockType::AIR) &&
-        (!isDiagonal || (blockTypes[COORD::Z_UP1].is(BlockType::AIR) &&
-                         blockTypes[COORD::Z_UP2].is(BlockType::AIR) &&
-                         blockTypes[COORD::X_UP1].is(BlockType::AIR) &&
-                         blockTypes[COORD::X_UP2].is(BlockType::AIR)))) {
+        canPass(blockTypes[COORD::FLOOR_UP1]) &&
+        canPass(blockTypes[COORD::FLOOR_UP2]) &&
+        (!isDiagonal || (canPass(blockTypes[COORD::X_UP1]) &&
+                         canPass(blockTypes[COORD::X_UP2]) &&
+                         canPass(blockTypes[COORD::Z_UP1]) &&
+                         canPass(blockTypes[COORD::Z_UP2])))) {
       TPos landingPos = blocksPos[COORD::FLOOR];
       BlockType landingType;
       // falling
@@ -394,51 +397,31 @@ class FinderBase {
       }
     }
 
-    // if (blocksPos[COORD::FLOOR].x == -29 && blocksPos[COORD::FLOOR].z == -80)
-    // {
-    //   std::cerr << blockTypes[COORD::FLOOR].is(BlockType::DANGER)
-    //             << blockTypes[COORD::FLOOR].is(BlockType::UNKNOWN)
-    //             << blockTypes[COORD::FLOOR_UP1].is(BlockType::CAN_UP)
-    //             << blockTypes[COORD::FLOOR_UP1].is(BlockType::CAN_DOWN)
-    //             << blockTypes[COORD::FLOOR_UP1].is(BlockType::CAN_UP_DOWN)
-    //             << blockTypes[COORD::FLOOR_UP2].is(BlockType::AIR) <<
-    //             isDiagonal
-    //             << blockTypes[COORD::Z_UP1].is(BlockType::AIR)
-    //             << blockTypes[COORD::Z_UP2].is(BlockType::AIR)
-    //             << blockTypes[COORD::X_UP1].is(BlockType::AIR)
-    //             << blockTypes[COORD::X_UP2].is(BlockType::AIR)
-    //             << blocksPos[COORD::FLOOR] << "\n";
-    // }
-
     // climb up
-    if (!isHorizontal &&
-        (blockTypes[COORD::FLOOR].is(BlockType::SAFE) ||
-         blockTypes[COORD::FLOOR].is(BlockType::AIR)) &&
+    if (!isHorizontal && blockTypes[COORD::FLOOR].is(BlockType::SAFE) &&
         (blockTypes[COORD::FLOOR_UP1].is(BlockType::CAN_UP) ||
          blockTypes[COORD::FLOOR_UP1].is(BlockType::CAN_UP_DOWN)) &&
-        blockTypes[COORD::FLOOR_UP1].is(BlockType::AIR) &&
-        blockTypes[COORD::FLOOR_UP2].is(BlockType::AIR) &&
-        blockTypes[COORD::FLOOR_UP3].is(BlockType::AIR) &&
-        (!isDiagonal || (blockTypes[COORD::Z_UP1].is(BlockType::AIR) &&
-                         blockTypes[COORD::Z_UP2].is(BlockType::AIR) &&
-                         blockTypes[COORD::X_UP1].is(BlockType::AIR) &&
-                         blockTypes[COORD::X_UP2].is(BlockType::AIR)))) {
+        canPass(blockTypes[COORD::FLOOR_UP1]) &&
+        canPass(blockTypes[COORD::FLOOR_UP2]) &&
+        canPass(blockTypes[COORD::FLOOR_UP3]) &&
+        (!isDiagonal || (canPass(blockTypes[COORD::X_UP1]) &&
+                         canPass(blockTypes[COORD::X_UP2]) &&
+                         canPass(blockTypes[COORD::Z_UP1]) &&
+                         canPass(blockTypes[COORD::Z_UP2])))) {
       possiblePos.emplace_back(XZoffset + TPos{0, 1, 0});
     }
 
     // climb down
-    if (!isHorizontal &&
-        (blockTypes[COORD::FLOOR_DOWN1].is(BlockType::SAFE) ||
-         blockTypes[COORD::FLOOR_DOWN1].is(BlockType::AIR)) &&
+    if (!isHorizontal && blockTypes[COORD::FLOOR_DOWN1].is(BlockType::SAFE) &&
         (blockTypes[COORD::FLOOR].is(BlockType::CAN_DOWN) ||
          blockTypes[COORD::FLOOR].is(BlockType::CAN_UP_DOWN)) &&
-        blockTypes[COORD::FLOOR].is(BlockType::AIR) &&
-        blockTypes[COORD::FLOOR_UP1].is(BlockType::AIR) &&
-        blockTypes[COORD::FLOOR_UP2].is(BlockType::AIR) &&
-        (!isDiagonal || (blockTypes[COORD::Z_UP1].is(BlockType::AIR) &&
-                         blockTypes[COORD::Z_UP2].is(BlockType::AIR) &&
-                         blockTypes[COORD::X_UP1].is(BlockType::AIR) &&
-                         blockTypes[COORD::X_UP2].is(BlockType::AIR)))) {
+        canPass(blockTypes[COORD::FLOOR]) &&
+        canPass(blockTypes[COORD::FLOOR_UP1]) &&
+        canPass(blockTypes[COORD::FLOOR_UP2]) &&
+        (!isDiagonal || (canPass(blockTypes[COORD::X_UP1]) &&
+                         canPass(blockTypes[COORD::X_UP2]) &&
+                         canPass(blockTypes[COORD::Z_UP1]) &&
+                         canPass(blockTypes[COORD::Z_UP2])))) {
       possiblePos.emplace_back(XZoffset - TPos{0, 1, 0});
     }
 
