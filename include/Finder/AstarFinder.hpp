@@ -45,7 +45,7 @@ class AstarFinder
     // direction to generate next node
     struct Direction {
       TPos offset;
-      CostT cost, upCost;
+      CostT cost;
     };
 
     const TPos &to = goal.getGoalPosition();
@@ -71,15 +71,13 @@ class AstarFinder
     std::vector<Direction> directions;
     for (int x = -1; x <= 1; ++x) {
       for (int z = -1; z <= 1; ++z) {
-        if (x == 0 && z == 0) continue;  // no move
         TPos offset{x, 0, z};
         if (!config.moveDiagonally && offset.abs().getXZ().sum() > 1) continue;
-        directions.push_back({offset,
-                              TEdgeEval::eval(offset),  // squared euclidean
-                              TEdgeEval::eval(offset + TPos{0, 1, 0})});
+        directions.push_back({offset, TEdgeEval::eval(offset)});
       }
     }
     const CostT fallCost = TEdgeEval::eval(TPos{0, 1, 0});
+    const CostT climbCost = TEdgeEval::eval(TPos{0, 1, 0});
 
     // add initial state
     pq.emplace(from, 0, TEstimateEval::eval(from, to));
@@ -138,34 +136,36 @@ class AstarFinder
 
       // find neighbour
       for (const Direction &dir : directions) {
-        TPos newOffset = BASE::isAbleToWalkTo(now.pos, dir.offset,
-                                              config.fallingDamageTolerance);
-        if (newOffset.abs().sum() > 0) {
-          CostT addGCost = dir.cost;
-          if (newOffset.y > 0)
-            addGCost = dir.upCost;
-          else if (newOffset.y < 0)
-            addGCost = fallCost * (-newOffset.y);
+        std::vector<TPos> newOffsets = BASE::isAbleToWalkTo(
+            now.pos, dir.offset, config.fallingDamageTolerance);
+        for (TPos &newOffset : newOffsets) {
+          if (newOffset.abs().sum() > 0) {
+            CostT addGCost = dir.cost;
+            if (newOffset.y > 0)
+              addGCost += climbCost * (newOffset.y);
+            else if (newOffset.y < 0)
+              addGCost += fallCost * (-newOffset.y);
 
-          // add new position
-          const TPos newPos = now.pos + newOffset;
-          const TPos &parent = now.pos;
-          const CostT newGCost = now.gCost + addGCost;
+            // add new position
+            const TPos newPos = now.pos + newOffset;
+            const TPos &parent = now.pos;
+            const CostT newGCost = now.gCost + addGCost;
 
-          auto found_it = infoTable.find(newPos);
-          if (found_it != infoTable.end()) {
-            CostT &PreGCost = found_it->second.gCost;
-            // compare the gCost and reserve the one with lower cost
-            if (newGCost < PreGCost) {
-              found_it->second.parent = parent;
-              found_it->second.gCost = newGCost;
-              pq.emplace(newPos, newGCost,
-                         found_it->second.hCost);  // lazy deletion
+            auto found_it = infoTable.find(newPos);
+            if (found_it != infoTable.end()) {
+              CostT &PreGCost = found_it->second.gCost;
+              // compare the gCost and reserve the one with lower cost
+              if (newGCost < PreGCost) {
+                found_it->second.parent = parent;
+                found_it->second.gCost = newGCost;
+                pq.emplace(newPos, newGCost,
+                           found_it->second.hCost);  // lazy deletion
+              }
+            } else {
+              CostT newHCost = TEstimateEval::eval(newPos, to);
+              pq.emplace(newPos, newGCost, newHCost);
+              infoTable[newPos] = {parent, newGCost, newHCost};
             }
-          } else {
-            CostT newHCost = TEstimateEval::eval(newPos, to);
-            pq.emplace(newPos, newGCost, newHCost);
-            infoTable[newPos] = {parent, newGCost, newHCost};
           }
         }
       }

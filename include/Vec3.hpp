@@ -102,6 +102,45 @@ class Vec3 {
     return newVec3;
   }
 
+  inline Vec3<T> offsetX(T x_offset) const {
+    Vec3<T> newVec3 = *this;
+    newVec3.x += x_offset;
+    return newVec3;
+  }
+
+  inline Vec3<T> offsetY(T y_offset) const {
+    Vec3<T> newVec3 = *this;
+    newVec3.y += y_offset;
+    return newVec3;
+  }
+
+  inline Vec3<T> offsetZ(T z_offset) const {
+    Vec3<T> newVec3 = *this;
+    newVec3.z += z_offset;
+    return newVec3;
+  }
+
+  inline Vec3<T> offsetXY(T x_offset, T y_offset) const {
+    Vec3<T> newVec3 = *this;
+    newVec3.x += x_offset;
+    newVec3.y += y_offset;
+    return newVec3;
+  }
+
+  inline Vec3<T> offsetXZ(T x_offset, T z_offset) const {
+    Vec3<T> newVec3 = *this;
+    newVec3.x += x_offset;
+    newVec3.z += z_offset;
+    return newVec3;
+  }
+
+  inline Vec3<T> offsetYZ(T y_offset, T z_offset) const {
+    Vec3<T> newVec3 = *this;
+    newVec3.y += y_offset;
+    newVec3.z += z_offset;
+    return newVec3;
+  }
+
   inline void adjust(T x_offset, T y_offset, T z_offset) {
     x += x_offset;
     y += y_offset;

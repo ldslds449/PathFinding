@@ -7,10 +7,10 @@
 #include <memory>
 #include <regex>
 #include <string>
+#include <thread>
 #include <unordered_map>
 #include <utility>
 #include <vector>
-#include <thread>
 
 #include "BlockType.hpp"
 #include "Goal/Goal.hpp"
@@ -239,7 +239,20 @@ class FinderBase {
         {"minecraft:cactus", {BlockType::DANGER, BlockType::NONE}},
         {"minecraft:campfire", {BlockType::DANGER, BlockType::NONE}},
         {"minecraft:magma_block", {BlockType::DANGER, BlockType::NONE}},
-        {"minecraft:wither_rose", {BlockType::DANGER, BlockType::NONE}}};
+        {"minecraft:wither_rose", {BlockType::DANGER, BlockType::NONE}},
+        {"minecraft:cave_vines", {BlockType::AIR, BlockType::CAN_UP_DOWN}},
+        {"minecraft:cave_vines_plant",
+         {BlockType::AIR, BlockType::CAN_UP_DOWN}},
+        {"minecraft:ladder", {BlockType::AIR, BlockType::CAN_UP_DOWN}},
+        {"minecraft:vine", {BlockType::AIR, BlockType::CAN_UP_DOWN}},
+        {"minecraft:weeping_vines", {BlockType::AIR, BlockType::CAN_UP_DOWN}},
+        {"minecraft:weeping_vines_plant",
+         {BlockType::AIR, BlockType::CAN_UP_DOWN}},
+        {"minecraft:scaffolding", {BlockType::AIR, BlockType::CAN_UP_DOWN}},
+        {"minecraft:twisting_vines", {BlockType::AIR, BlockType::CAN_UP_DOWN}},
+        {"minecraft:twisting_vines_plant",
+         {BlockType::AIR, BlockType::CAN_UP_DOWN}},
+    };
     auto it = blockTable.find(blockName);
     return it != blockTable.end() ? it->second : defaultBlockType;
   }
@@ -280,10 +293,11 @@ class FinderBase {
                .count() >= timeLimit;
   }
 
-  TPos isAbleToWalkTo(const TPos &from, const TPos &XZoffset,
-                      const float &fallDamageTol) const {
+  std::vector<TPos> isAbleToWalkTo(const TPos &from, const TPos &XZoffset,
+                                   const float &fallDamageTol) const {
     bool canJump = getBlockType(from + TPos{0, 3, 0}).is(BlockType::AIR);
     const bool isDiagonal = XZoffset.getXZ().abs().sum() > 1;
+    const bool isHorizontal = XZoffset.getXZ().abs().sum() > 0;
 
     // check positions
     const std::vector blocksPos = {
@@ -291,12 +305,16 @@ class FinderBase {
         from + XZoffset + TPos{0, 1, 0},
         from + XZoffset + TPos{0, 2, 0},
         from + XZoffset + TPos{0, 3, 0},
+        from + XZoffset - TPos{0, 1, 0},
         from + TPos{0, 1, XZoffset.z},
         from + TPos{0, 2, XZoffset.z},
         from + TPos{0, 3, XZoffset.z},
         from + TPos{XZoffset.x, 1, 0},
         from + TPos{XZoffset.x, 2, 0},
         from + TPos{XZoffset.x, 3, 0},
+        from,
+        from + TPos{0, 1, 0},
+        from + TPos{0, 2, 0},
     };
     // alias
     enum COORD : short {
@@ -304,53 +322,63 @@ class FinderBase {
       FLOOR_UP1,
       FLOOR_UP2,
       FLOOR_UP3,
+      FLOOR_DOWN1,
       Z_UP1,
       Z_UP2,
       Z_UP3,
       X_UP1,
       X_UP2,
       X_UP3,
+      ORIG,
+      ORIG_UP1,
+      ORIG_UP2,
     };
     const std::vector<BlockType> &blockTypes = getBlockType(blocksPos);
 
     // unknown, always can not walk to
     if (blockTypes[COORD::FLOOR].is(BlockType::UNKNOWN)) {
-      return TPos{0, 0, 0};
+      return {TPos{0, 0, 0}};
     }
 
+    std::vector<TPos> possiblePos;
+
     // walk
-    if (blockTypes[COORD::FLOOR_UP1].is(BlockType::AIR) &&
+    if (isHorizontal && blockTypes[COORD::FLOOR_UP1].is(BlockType::AIR) &&
         blockTypes[COORD::FLOOR_UP2].is(BlockType::AIR) &&
-        blockTypes[COORD::FLOOR].is(BlockType::SAFE)) {
+        blockTypes[COORD::FLOOR].is(BlockType::SAFE) &&
+        blockTypes[COORD::FLOOR].is(BlockType::NONE)) {
       if (!isDiagonal || (blockTypes[COORD::X_UP1].is(BlockType::AIR) &&
                           blockTypes[COORD::X_UP2].is(BlockType::AIR) &&
                           blockTypes[COORD::Z_UP1].is(BlockType::AIR) &&
                           blockTypes[COORD::Z_UP2].is(BlockType::AIR))) {
-        return XZoffset;
+        possiblePos.emplace_back(XZoffset);
       }
     }
 
     // walk + jump
-    if (blockTypes[COORD::FLOOR_UP2].is(BlockType::AIR) &&
+    if (isHorizontal && blockTypes[COORD::FLOOR_UP2].is(BlockType::AIR) &&
         blockTypes[COORD::FLOOR_UP3].is(BlockType::AIR) &&
-        blockTypes[COORD::FLOOR_UP1].is(BlockType::SAFE) && canJump) {
+        blockTypes[COORD::FLOOR_UP1].is(BlockType::SAFE) &&
+        blockTypes[COORD::FLOOR_UP1].is(BlockType::NONE) &&
+        blockTypes[COORD::ORIG_UP1].is(BlockType::NONE) && canJump) {
       if (!isDiagonal || (blockTypes[COORD::X_UP2].is(BlockType::AIR) &&
                           blockTypes[COORD::X_UP3].is(BlockType::AIR) &&
                           blockTypes[COORD::Z_UP2].is(BlockType::AIR) &&
                           blockTypes[COORD::Z_UP3].is(BlockType::AIR))) {
-        return XZoffset + TPos{0, 1, 0};
+        possiblePos.emplace_back(XZoffset + TPos{0, 1, 0});
       }
     }
 
     // fall
-    if ((blockTypes[COORD::FLOOR].is(BlockType::AIR) ||
+    if (isHorizontal &&
+        (blockTypes[COORD::FLOOR].is(BlockType::AIR) ||
          blockTypes[COORD::FLOOR].is(BlockType::FORCE_DOWN)) &&
         blockTypes[COORD::FLOOR_UP1].is(BlockType::AIR) &&
         blockTypes[COORD::FLOOR_UP2].is(BlockType::AIR) &&
-        (!isDiagonal || blockTypes[COORD::Z_UP1].is(BlockType::AIR) &&
-                            blockTypes[COORD::Z_UP2].is(BlockType::AIR) &&
-                            blockTypes[COORD::X_UP1].is(BlockType::AIR) &&
-                            blockTypes[COORD::X_UP2].is(BlockType::AIR))) {
+        (!isDiagonal || (blockTypes[COORD::Z_UP1].is(BlockType::AIR) &&
+                         blockTypes[COORD::Z_UP2].is(BlockType::AIR) &&
+                         blockTypes[COORD::X_UP1].is(BlockType::AIR) &&
+                         blockTypes[COORD::X_UP2].is(BlockType::AIR)))) {
       TPos landingPos = blocksPos[COORD::FLOOR];
       BlockType landingType;
       // falling
@@ -359,14 +387,62 @@ class FinderBase {
         landingType = getBlockType(landingPos);
       } while (landingType.is(BlockType::AIR) ||
                landingType.is(BlockType::FORCE_DOWN));
-      if (!landingType.is(BlockType::DANGER) &&
+      if (landingType.is(BlockType::SAFE) &&
           getFallDamage(landingPos, (blocksPos[COORD::FLOOR] - landingPos).y) <=
               fallDamageTol) {
-        return landingPos - from;
+        possiblePos.emplace_back(landingPos - from);
       }
     }
 
-    return TPos(0, 0, 0);
+    // if (blocksPos[COORD::FLOOR].x == -29 && blocksPos[COORD::FLOOR].z == -80)
+    // {
+    //   std::cerr << blockTypes[COORD::FLOOR].is(BlockType::DANGER)
+    //             << blockTypes[COORD::FLOOR].is(BlockType::UNKNOWN)
+    //             << blockTypes[COORD::FLOOR_UP1].is(BlockType::CAN_UP)
+    //             << blockTypes[COORD::FLOOR_UP1].is(BlockType::CAN_DOWN)
+    //             << blockTypes[COORD::FLOOR_UP1].is(BlockType::CAN_UP_DOWN)
+    //             << blockTypes[COORD::FLOOR_UP2].is(BlockType::AIR) <<
+    //             isDiagonal
+    //             << blockTypes[COORD::Z_UP1].is(BlockType::AIR)
+    //             << blockTypes[COORD::Z_UP2].is(BlockType::AIR)
+    //             << blockTypes[COORD::X_UP1].is(BlockType::AIR)
+    //             << blockTypes[COORD::X_UP2].is(BlockType::AIR)
+    //             << blocksPos[COORD::FLOOR] << "\n";
+    // }
+
+    // climb up
+    if (!isHorizontal &&
+        (blockTypes[COORD::FLOOR].is(BlockType::SAFE) ||
+         blockTypes[COORD::FLOOR].is(BlockType::AIR)) &&
+        (blockTypes[COORD::FLOOR_UP1].is(BlockType::CAN_UP) ||
+         blockTypes[COORD::FLOOR_UP1].is(BlockType::CAN_UP_DOWN)) &&
+        blockTypes[COORD::FLOOR_UP1].is(BlockType::AIR) &&
+        blockTypes[COORD::FLOOR_UP2].is(BlockType::AIR) &&
+        blockTypes[COORD::FLOOR_UP3].is(BlockType::AIR) &&
+        (!isDiagonal || (blockTypes[COORD::Z_UP1].is(BlockType::AIR) &&
+                         blockTypes[COORD::Z_UP2].is(BlockType::AIR) &&
+                         blockTypes[COORD::X_UP1].is(BlockType::AIR) &&
+                         blockTypes[COORD::X_UP2].is(BlockType::AIR)))) {
+      possiblePos.emplace_back(XZoffset + TPos{0, 1, 0});
+    }
+
+    // climb down
+    if (!isHorizontal &&
+        (blockTypes[COORD::FLOOR_DOWN1].is(BlockType::SAFE) ||
+         blockTypes[COORD::FLOOR_DOWN1].is(BlockType::AIR)) &&
+        (blockTypes[COORD::FLOOR].is(BlockType::CAN_DOWN) ||
+         blockTypes[COORD::FLOOR].is(BlockType::CAN_UP_DOWN)) &&
+        blockTypes[COORD::FLOOR].is(BlockType::AIR) &&
+        blockTypes[COORD::FLOOR_UP1].is(BlockType::AIR) &&
+        blockTypes[COORD::FLOOR_UP2].is(BlockType::AIR) &&
+        (!isDiagonal || (blockTypes[COORD::Z_UP1].is(BlockType::AIR) &&
+                         blockTypes[COORD::Z_UP2].is(BlockType::AIR) &&
+                         blockTypes[COORD::X_UP1].is(BlockType::AIR) &&
+                         blockTypes[COORD::X_UP2].is(BlockType::AIR)))) {
+      possiblePos.emplace_back(XZoffset - TPos{0, 1, 0});
+    }
+
+    return possiblePos;
   }
 
   inline bool isGoalExist(const goal::GoalBase<TPos> &goal) const {

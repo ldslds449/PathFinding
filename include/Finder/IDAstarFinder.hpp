@@ -82,7 +82,7 @@ class IDAstarFinder
     // direction to generate next node
     struct Direction {
       TPos offset;
-      CostT cost, upCost;
+      CostT cost;
     };
 
     const TPos &to = goal.getGoalPosition();
@@ -102,15 +102,13 @@ class IDAstarFinder
     std::vector<Direction> directions;
     for (int x = -1; x <= 1; ++x) {
       for (int z = -1; z <= 1; ++z) {
-        if (x == 0 && z == 0) continue;  // no move
         TPos offset{x, 0, z};
         if (!config.moveDiagonally && offset.abs().getXZ().sum() > 1) continue;
-        directions.push_back({offset,
-                              TEdgeEval::eval(offset),  // squared euclidean
-                              TEdgeEval::eval(offset + TPos{0, 1, 0})});
+        directions.push_back({offset, TEdgeEval::eval(offset)});
       }
     }
     const CostT fallCost = TEdgeEval::eval(TPos{0, 1, 0});
+    const CostT climbCost = TEdgeEval::eval(TPos{0, 1, 0});
 
     // add initial state
     st.emplace(from, 0, 0);
@@ -177,27 +175,29 @@ class IDAstarFinder
       // get next neighbour
       const Direction &dir = directions[now.dirIdx];
 
-      TPos newOffset = BASE::isAbleToWalkTo(now.pos, dir.offset,
-                                            config.fallingDamageTolerance);
-      if (newOffset.abs().sum() > 0) {
-        const TPos newPos = now.pos + newOffset;
-        CostT addGCost = dir.cost;
-        if (newOffset.y > 0)
-          addGCost = dir.upCost;
-        else if (newOffset.y < 0)
-          addGCost = fallCost * (-newOffset.y);
+      TPos newOffsets = BASE::isAbleToWalkTo(now.pos, dir.offset,
+                                             config.fallingDamageTolerance);
+      for (TPos &newOffset : newOffsets) {
+        if (newOffset.abs().sum() > 0) {
+          const TPos newPos = now.pos + newOffset;
+          CostT addGCost = dir.cost;
+          if (newOffset.y > 0)
+            addGCost += climbCost * (newOffset.y);
+          else if (newOffset.y < 0)
+            addGCost += fallCost * (-newOffset.y);
 
-        CostT newGCost = now.gcost + addGCost;
-        CostT newFCost =
-            TWeighted::combine(newGCost, TEstimateEval::eval(newPos, to));
+          CostT newGCost = now.gcost + addGCost;
+          CostT newFCost =
+              TWeighted::combine(newGCost, TEstimateEval::eval(newPos, to));
 
-        // whether the child is in the pv
-        if (stackList.count(newPos) == 0) {
-          if (newFCost <= costLimit) {
-            st.emplace(newPos, newGCost, 0);
-            stackList.insert(newPos);
-          } else {
-            minExceedCost = std::min(minExceedCost, newFCost);
+          // whether the child is in the pv
+          if (stackList.count(newPos) == 0) {
+            if (newFCost <= costLimit) {
+              st.emplace(newPos, newGCost, 0);
+              stackList.insert(newPos);
+            } else {
+              minExceedCost = std::min(minExceedCost, newFCost);
+            }
           }
         }
       }
