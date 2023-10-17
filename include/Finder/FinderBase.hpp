@@ -173,8 +173,8 @@ class FinderBase {
       const TPos &prevPos = pathVec[i - 1], &newPos = pathVec[i],
                  diffPos = newPos - prevPos;
       std::cout << "From: " << prevPos << " To: " << newPos
-                << " Diff: " << diffPos << " (" << i + 1 << "/" << path->size()
-                << ")" << std::endl
+                << " Diff: " << diffPos << " (" << i << "/"
+                << (path->size() - 1) << ")" << std::endl
                 << std::flush;
       bool r = true;
       int retryTime = 0;
