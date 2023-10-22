@@ -45,14 +45,14 @@ class FinderBase {
    * Input: a path
    * Return: whether movements are successful
    */
-  inline bool go(const std::shared_ptr<Path<TPos>> &path) {
-    return goImpl(path);
+  inline bool go(const std::shared_ptr<Path<TPos>> &path, const int &retry = 10) {
+    return goImpl(path, retry);
   }
 
-  inline void findPathAndGo(const TPos &from, const goal::GoalBase<TPos> &goal,
+  inline bool findPathAndGo(const TPos &from, const goal::GoalBase<TPos> &goal,
                             const U64 &timeLimit = 0, const U64 &nodeLimit = 0,
                             const U64 &extraTimeLimit = 100,
-                            const int &retry = 5) {
+                            const int &retry = 10) {
     auto run =
         [&](const TPos &nowFrom,
             const goal::GoalBase<TPos> &nowGoal) -> std::pair<bool, TPos> {
@@ -66,7 +66,7 @@ class FinderBase {
                 << std::chrono::duration_cast<std::chrono::milliseconds>(t2 -
                                                                          t1)
                        .count()
-                << "ms" << std::endl;
+                << "ms" << std::endl << std::flush;
 
       if (path->size() == 0) {
         if (r.first == PathResult::NOT_FOUND) {
@@ -78,9 +78,11 @@ class FinderBase {
         }
         return {false, TPos()};
       }
-      std::cout << "Executing...\n";
-      go(path);
-      std::cout << "Done\n";
+      std::cout << "Executing...\n" << std::flush;
+      if (!go(path, retry)) {
+        return {false, TPos()};
+      }
+      std::cout << "Done\n" << std::flush;
       return {true, (*path)[path->size() - 1]};
     };
 
@@ -105,13 +107,13 @@ class FinderBase {
                   << std::flush;
 
         auto result = run(lastPos, goal::RangeGoal<TPos>(nowGoalPos, 5, -1, 5));
-        if (!result.first) break;
+        if (!result.first) return false;
         lastPos = result.second;
       } else {
-        run(lastPos, goal);
-        break;
+        return run(lastPos, goal).first;
       }
     }
+    return true;
   }
 
   /*
@@ -166,7 +168,7 @@ class FinderBase {
       const TPos &from, const goal::GoalBase<TPos> &goal, const U64 &timeLimit,
       const U64 &nodeLimit, const U64 &extraTimeLimit) const = 0;
 
-  bool goImpl(const std::shared_ptr<Path<TPos>> &path, const int &retry = 3) {
+  bool goImpl(const std::shared_ptr<Path<TPos>> &path, const int &retry = 10) {
     auto &pathVec = path->get();
     // skip first position
     for (int i = 1; i < pathVec.size(); ++i) {
