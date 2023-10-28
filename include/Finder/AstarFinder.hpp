@@ -200,7 +200,7 @@ class AstarFinder
   AstarFinder() = default;
   AstarFinder(const finderConfig &_config) : config(_config) {}
 
- private:
+ protected:
   finderConfig config;
 };
 

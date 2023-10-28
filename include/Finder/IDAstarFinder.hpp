@@ -62,10 +62,9 @@ class IDAstarFinder
   IDAstarFinder() = default;
   IDAstarFinder(const finderConfig &_config) : config(_config) {}
 
- private:
+ protected:
   finderConfig config;
 
- protected:
   std::tuple<PathResult, std::shared_ptr<Path<TPos>>, CostT, U64>
   AstarWithCostLimit(const TPos &from, const goal::GoalBase<TPos> &goal,
                      const U64 &timeLimit, const U64 &nodeLimit,
