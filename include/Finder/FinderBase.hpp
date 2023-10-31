@@ -8,10 +8,10 @@
 #include <regex>
 #include <string>
 #include <thread>
+#include <tuple>
 #include <unordered_map>
 #include <utility>
 #include <vector>
-#include <tuple>
 
 #include "BlockType.hpp"
 #include "Goal/Goal.hpp"
@@ -67,9 +67,8 @@ class FinderBase {
                             const U64 &timeLimit = 0, const U64 &nodeLimit = 0,
                             const U64 &extraTimeLimit = 100,
                             const int &retry = 10) {
-    auto run =
-        [&](const TPos &nowFrom,
-            const goal::GoalBase<TPos> &nowGoal) -> std::tuple<bool, bool, TPos> {  // find path error, move error, goal
+    auto run = [&](const TPos &nowFrom, const goal::GoalBase<TPos> &nowGoal)
+        -> std::tuple<bool, bool, TPos> {  // find path error, move error, goal
       auto t1 = std::chrono::steady_clock::now();
       auto r = findPath(nowFrom, nowGoal, timeLimit, nodeLimit);
       auto t2 = std::chrono::steady_clock::now();
@@ -77,10 +76,9 @@ class FinderBase {
 
       std::cout << "Length: " << path->size() << std::endl;
       std::cout << "Took: "
-                << std::chrono::duration_cast<std::chrono::milliseconds>(t2 -
-                                                                         t1)
-                       .count()
-                << "ms" << std::endl << std::flush;
+                << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count()
+                << "ms" << std::endl
+                << std::flush;
 
       if (path->size() == 0) {
         if (r.first == PathResult::NOT_FOUND) {
@@ -89,6 +87,8 @@ class FinderBase {
           std::cout << "Time Limit Exceed" << std::endl << std::flush;
         } else if (r.first == PathResult::NODE_SEARCH_LIMIT_EXCEED) {
           std::cout << "Node Search Limit Exceed" << std::endl << std::flush;
+        } else {
+          std::cout << "Unknown Error" << std::endl << std::flush;
         }
         return {true, false, TPos()};
       }
@@ -105,7 +105,13 @@ class FinderBase {
     const TPos &goalPos = goal.getGoalPosition();
     const int step = 2 * 16;  // 2 chunks
 
-    for (int i = 0; i < retry; ++i) {
+    for (int i = 0;; ++i) {
+      // check retry time
+      if (i > retry) {
+        std::cout << "Exceed retry time (" << retry << ")\n" << std::flush;
+        return false;
+      }
+
       // the goal is in a unload chunk
       if (getBlockType(goalPos).is(BlockType::UNKNOWN)) {
         const TPos vec = goalPos - lastPos;
@@ -122,25 +128,28 @@ class FinderBase {
                   << std::flush;
 
         auto result = run(lastPos, goal::RangeGoal<TPos>(nowGoalPos, 5, -1, 5));
-        if (std::get<0>(result)) return false;
-        if (std::get<1>(result)) {
-          lastPos = getPlayerLocation();
-          std::cout << "Replanning the path\n" << std::flush;
-          continue;
-        };
-        lastPos = std::get<2>(result);
+        if (std::get<0>(result)) {
+          std::cout << "Find Path Error\n" << std::flush;
+          return false;
+        } else if (std::get<1>(result)) {
+          std::cout << "Move Path Error, Replanning the Path\n" << std::flush;
+        }
+        lastPos = getPlayerLocation();
+        continue;
       } else {
         auto result = run(lastPos, goal);
-        if (std::get<0>(result)) return false;
-        if (std::get<1>(result)) {
+        if (std::get<0>(result)) {
+          std::cout << "Find Path Error\n" << std::flush;
+          return false;
+        } else if (std::get<1>(result)) {
+          std::cout << "Move Path Error, Replanning the Path\n" << std::flush;
           lastPos = getPlayerLocation();
-          std::cout << "Replanning the path\n" << std::flush;
           continue;
-        };
-        return true;
+        } else {
+          return true;
+        }
       }
     }
-    return true;
   }
 
   /*
