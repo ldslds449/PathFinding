@@ -45,10 +45,15 @@ class FinderBase {
    * Input: a path
    * Return: whether movements are successful
    */
-  inline bool go(const std::shared_ptr<Path<TPos>> &path, const int &retry = 10) {
-    return goImpl(path, retry);
+  inline bool go(const std::shared_ptr<Path<TPos>> &path) {
+    return goImpl(path);
   }
 
+  /*
+   * Find a path to the goal and move along the path
+   * Input: start locaiont and the goal
+   * Return: whether movements are successful
+   */
   inline bool findPathAndGo(const TPos &from, const goal::GoalBase<TPos> &goal,
                             const U64 &timeLimit = 0, const U64 &nodeLimit = 0,
                             const U64 &extraTimeLimit = 100,
@@ -79,7 +84,7 @@ class FinderBase {
         return {false, TPos()};
       }
       std::cout << "Executing...\n" << std::flush;
-      if (!go(path, retry)) {
+      if (!go(path)) {
         return {false, TPos()};
       }
       std::cout << "Done\n" << std::flush;
@@ -114,13 +119,6 @@ class FinderBase {
       }
     }
     return true;
-  }
-
-  /*
-   * Ask the player to move
-   */
-  inline bool playerMove(const TPos &from, const TPos &to) {
-    return static_cast<TDrived *>(this)->playerMoveImpl(from, to);
   }
 
   /*
@@ -168,36 +166,10 @@ class FinderBase {
       const TPos &from, const goal::GoalBase<TPos> &goal, const U64 &timeLimit,
       const U64 &nodeLimit, const U64 &extraTimeLimit) const = 0;
 
-  bool goImpl(const std::shared_ptr<Path<TPos>> &path, const int &retry = 10) {
-    auto &pathVec = path->get();
-    // skip first position
-    for (int i = 1; i < pathVec.size(); ++i) {
-      const TPos &prevPos = pathVec[i - 1], &newPos = pathVec[i],
-                 diffPos = newPos - prevPos;
-      std::cout << "From: " << prevPos << " To: " << newPos
-                << " Diff: " << diffPos << " (" << i << "/"
-                << (path->size() - 1) << ")" << std::endl
-                << std::flush;
-      bool r = true;
-      int retryTime = 0;
-      do {
-        if (!r)
-          std::this_thread::sleep_for(std::chrono::milliseconds(50));  // 1 tick
-        r = playerMove(prevPos, newPos);
-        retryTime++;
-      } while (!r && retryTime <= retry);
-      if (!r) {
-        std::cout << "Move Failed !" << std::endl << std::flush;
-        return false;
-      }
-    }
-    return true;
-  }
-
   /*
    * This should be implemented in subclass
    */
-  virtual bool playerMoveImpl(const TPos &from, const TPos &to) = 0;
+  virtual bool goImpl(const std::shared_ptr<Path<TPos>> &path) = 0;
 
   /*
    * This should be implemented in subclass
