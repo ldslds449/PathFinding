@@ -11,6 +11,7 @@
 #include <unordered_map>
 #include <utility>
 #include <vector>
+#include <tuple>
 
 #include "BlockType.hpp"
 #include "Goal/Goal.hpp"
@@ -46,7 +47,15 @@ class FinderBase {
    * Return: whether movements are successful
    */
   inline bool go(const std::shared_ptr<Path<TPos>> &path) {
-    return goImpl(path);
+    return static_cast<TDrived *>(this)->goImpl(path);
+  }
+
+  /*
+   * get player current location
+   * Return: player current location
+   */
+  inline TPos getPlayerLocation() {
+    return static_cast<const TDrived *>(this)->getPlayerLocationImpl();
   }
 
   /*
@@ -60,7 +69,7 @@ class FinderBase {
                             const int &retry = 10) {
     auto run =
         [&](const TPos &nowFrom,
-            const goal::GoalBase<TPos> &nowGoal) -> std::pair<bool, TPos> {
+            const goal::GoalBase<TPos> &nowGoal) -> std::tuple<bool, bool, TPos> {  // find path error, move error, goal
       auto t1 = std::chrono::steady_clock::now();
       auto r = findPath(nowFrom, nowGoal, timeLimit, nodeLimit);
       auto t2 = std::chrono::steady_clock::now();
@@ -81,14 +90,15 @@ class FinderBase {
         } else if (r.first == PathResult::NODE_SEARCH_LIMIT_EXCEED) {
           std::cout << "Node Search Limit Exceed" << std::endl << std::flush;
         }
-        return {false, TPos()};
+        return {true, false, TPos()};
       }
       std::cout << "Executing...\n" << std::flush;
       if (!go(path)) {
-        return {false, TPos()};
+        std::cout << "Move Failed!\n" << std::flush;
+        return {false, true, TPos()};
       }
       std::cout << "Done\n" << std::flush;
-      return {true, (*path)[path->size() - 1]};
+      return {false, false, (*path)[path->size() - 1]};
     };
 
     TPos lastPos = from, nowGoalPos;
@@ -112,10 +122,22 @@ class FinderBase {
                   << std::flush;
 
         auto result = run(lastPos, goal::RangeGoal<TPos>(nowGoalPos, 5, -1, 5));
-        if (!result.first) return false;
-        lastPos = result.second;
+        if (std::get<0>(result)) return false;
+        if (std::get<1>(result)) {
+          lastPos = getPlayerLocation();
+          std::cout << "Replanning the path\n" << std::flush;
+          continue;
+        };
+        lastPos = std::get<2>(result);
       } else {
-        return run(lastPos, goal).first;
+        auto result = run(lastPos, goal);
+        if (std::get<0>(result)) return false;
+        if (std::get<1>(result)) {
+          lastPos = getPlayerLocation();
+          std::cout << "Replanning the path\n" << std::flush;
+          continue;
+        };
+        return true;
       }
     }
     return true;
@@ -170,6 +192,11 @@ class FinderBase {
    * This should be implemented in subclass
    */
   virtual bool goImpl(const std::shared_ptr<Path<TPos>> &path) = 0;
+
+  /*
+   * This should be implemented in subclass
+   */
+  virtual TPos getPlayerLocationImpl() const = 0;
 
   /*
    * This should be implemented in subclass
