@@ -69,7 +69,7 @@ class FinderBase {
                             const int &retry = 10) {
     auto run = [&](const TPos &nowFrom, const goal::GoalBase<TPos> &nowGoal)
         -> std::tuple<bool, bool, TPos> {  // find path error, move error, goal
-      std::cout << "Find Path...\n" << std::endl;
+      std::cout << "Find Path...\n" << std::flush;
       auto t1 = std::chrono::steady_clock::now();
       auto r = findPath(nowFrom, nowGoal, timeLimit, nodeLimit, extraTimeLimit);
       auto t2 = std::chrono::steady_clock::now();
@@ -399,8 +399,8 @@ class FinderBase {
       do {
         landingPos -= TPos{0, 1, 0};
         landingType = getBlockType(landingPos);
-      } while (landingType.is(BlockType::AIR) ||
-               landingType.is(BlockType::FORCE_DOWN));
+      } while ((landingType.is(BlockType::AIR) ||
+               landingType.is(BlockType::FORCE_DOWN)) && landingPos.y >= -64);  // The void: y <= -64
       if (landingType.is(BlockType::SAFE) &&
           getFallDamage(landingPos, (blocksPos[COORD::FLOOR] - landingPos).y) <=
               fallDamageTol) {
