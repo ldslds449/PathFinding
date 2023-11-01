@@ -69,8 +69,9 @@ class FinderBase {
                             const int &retry = 10) {
     auto run = [&](const TPos &nowFrom, const goal::GoalBase<TPos> &nowGoal)
         -> std::tuple<bool, bool, TPos> {  // find path error, move error, goal
+      std::cout << "Find Path...\n" << std::endl;
       auto t1 = std::chrono::steady_clock::now();
-      auto r = findPath(nowFrom, nowGoal, timeLimit, nodeLimit);
+      auto r = findPath(nowFrom, nowGoal, timeLimit, nodeLimit, extraTimeLimit);
       auto t2 = std::chrono::steady_clock::now();
       auto path = r.second;
 
@@ -123,7 +124,7 @@ class FinderBase {
         nowGoalPos.z = lastPos.z + std::floor(vecUnit.z * step);
 
         std::cout << "Position " << goalPos
-                  << " is in a unload chunk, try to get closer " << nowGoalPos
+                  << " is in an unload chunk, try to get closer " << nowGoalPos
                   << " to load the chunk." << std::endl
                   << std::flush;
 
@@ -132,7 +133,7 @@ class FinderBase {
           std::cout << "Find Path Error\n" << std::flush;
           return false;
         } else if (std::get<1>(result)) {
-          std::cout << "Move Path Error, Replanning the Path\n" << std::flush;
+          std::cout << "Move Path Error, replanning the path\n" << std::flush;
         }
         lastPos = getPlayerLocation();
         continue;
@@ -142,7 +143,7 @@ class FinderBase {
           std::cout << "Find Path Error\n" << std::flush;
           return false;
         } else if (std::get<1>(result)) {
-          std::cout << "Move Path Error, Replanning the Path\n" << std::flush;
+          std::cout << "Move Path Error, replanning the path\n" << std::flush;
           lastPos = getPlayerLocation();
           continue;
         } else {
