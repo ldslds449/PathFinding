@@ -14,8 +14,6 @@ class GoalBase {
 
   const TPos &getGoalPosition() const { return goalPos; }
 
-  virtual std::vector<TPos> getPossibleGoalPosition() const = 0;
-
  protected:
   GoalBase(const TPos &_goalPos) : goalPos(_goalPos) {}
 
