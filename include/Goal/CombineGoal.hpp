@@ -10,9 +10,9 @@ namespace pathfinding {
 
 namespace goal {
 
-template <typename... TGoals>
-class CombineGoal : public GoalBase<TDeducedPos<TGoals...>> {
-  using TPos = TDeducedPos<TGoals...>;
+template <typename TMainGoal, typename... TGoals>
+class CombineGoal : public GoalBase<TDeducedPos<TMainGoal>> {
+  using TPos = TDeducedPos<TMainGoal>;
 
  public:
   virtual bool isSuitableGoal(const TPos &pos) const override {
@@ -22,10 +22,10 @@ class CombineGoal : public GoalBase<TDeducedPos<TGoals...>> {
     return std::apply(checkOneGoal, goals);
   }
 
-  CombineGoal(const TPos &_goalPos, const TGoals &..._goals)
-      : GoalBase<TPos>(_goalPos), goals(_goals...) {}
+  CombineGoal(const TMainGoal &main_goal, const TGoals &..._goals)
+      : GoalBase<TPos>(main_goal), goals(main_goal, _goals...) {}
 
-  const std::tuple<TGoals...> goals;
+  const std::tuple<TMainGoal, TGoals...> goals;
 };
 
 }  // namespace goal
