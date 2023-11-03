@@ -10,8 +10,10 @@ namespace pathfinding {
 
 namespace goal {
 
-template <class TPos, typename... TGoals>
-class CombineGoal : public GoalBase<TPos> {
+template <typename... TGoals>
+class CombineGoal : public GoalBase<TDeducedPos<TGoals...>> {
+  using TPos = TDeducedPos<TGoals...>;
+
  public:
   virtual bool isSuitableGoal(const TPos &pos) const override {
     auto checkOneGoal = [&](auto &&...goal) {

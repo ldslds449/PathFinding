@@ -10,6 +10,8 @@ namespace goal {
 template <class TPos>
 class GoalBase {
  public:
+  using pos_type = TPos;
+
   virtual bool isSuitableGoal(const TPos &pos) const = 0;
 
   const TPos &getGoalPosition() const { return goalPos; }
@@ -19,6 +21,11 @@ class GoalBase {
 
   TPos goalPos;
 };
+
+namespace {
+  template <typename... TGoals>
+  using TDeducedPos = typename std::tuple_element<0, std::tuple<TGoals...>>::pos_type;
+}
 
 };  // namespace goal
 
