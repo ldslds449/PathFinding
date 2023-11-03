@@ -23,7 +23,7 @@ class CombineGoal : public GoalBase<TDeducedPos<TMainGoal>> {
   }
 
   CombineGoal(const TMainGoal &main_goal, const TGoals &..._goals)
-      : GoalBase<TPos>(main_goal), goals(main_goal, _goals...) {}
+      : GoalBase<TPos>(main_goal.getGoalPosition()), goals(main_goal, _goals...) {}
 
   const std::tuple<TMainGoal, TGoals...> goals;
 };

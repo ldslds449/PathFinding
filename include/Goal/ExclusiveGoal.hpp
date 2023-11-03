@@ -18,7 +18,7 @@ class ExclusiveGoal : public GoalBase<TDeducedPos<TGoal>> {
   }
 
   ExclusiveGoal(const TGoal &_goal)
-      : GoalBase<TPos>(_goal.goalPos), goal(_goal) {}
+      : GoalBase<TPos>(_goal.getGoalPosition()), goal(_goal) {}
 
   TGoal goal;
 };
