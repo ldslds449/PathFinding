@@ -24,7 +24,7 @@ class GoalBase {
 
 namespace {
   template <typename... TGoals>
-  using TDeducedPos = typename std::tuple_element<0, std::tuple<TGoals...>>::pos_type;
+  using TDeducedPos = typename std::tuple_element<0, std::tuple<TGoals...>>::type::pos_type;
 }
 
 };  // namespace goal
