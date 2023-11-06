@@ -18,8 +18,16 @@ class BlockType {
   };
 
   inline bool is(const Property &flag) const { return property == flag; }
+  inline bool isNot(const Property &flag) const { return property != flag; }
 
   inline bool is(const Ability &flag) const { return ability == flag; }
+  inline bool isNot(const Ability &flag) const { return ability != flag; }
+
+  inline bool canPass() const {
+    return isNot(BlockType::UNKNOWN) &&
+           (is(BlockType::AIR) || is(BlockType::CAN_UP_DOWN) ||
+            is(BlockType::CAN_UP) || is(BlockType::CAN_DOWN));
+  }
 
   BlockType(const Property &_p, const Ability &_a)
       : property(_p), ability(_a) {}

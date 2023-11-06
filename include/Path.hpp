@@ -24,6 +24,8 @@ class Path {
   inline void add(const TPos &pos) { nodes.push_back(pos); }
   inline void reverse() { std::reverse(nodes.begin(), nodes.end()); }
   inline std::size_t size() const { return nodes.size(); }
+  inline const TPos &back() const { return nodes.back(); }
+  inline void pop_back() { nodes.pop_back(); }
   inline const std::vector<TPos> &get() const { return nodes; }
 
   TPos &operator[](const std::size_t &idx) { return nodes[idx]; }

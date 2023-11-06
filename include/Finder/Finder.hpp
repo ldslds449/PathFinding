@@ -3,5 +3,6 @@
 
 #include "AstarFinder.hpp"
 #include "IDAstarFinder.hpp"
+#include "BiAstarFinder.hpp"
 
 #endif  // PATHFINDING_FINDER_FINDER_H_

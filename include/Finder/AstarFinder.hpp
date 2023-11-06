@@ -85,14 +85,19 @@ class AstarFinder
     infoTable[from] = {from, 0, 0};
 
     // for loop to find a path to goal
-    Node now, last;
+    Node last;
     bool found = false, foundSuitable = false;
     bool timeUp = false, nodeSearchExceed = false;
     U64 nodeCount = 0;
     while (!pq.empty()) {
-      Node pre = now;
-      now = pq.top();
+      Node now = pq.top();
       pq.pop();
+
+      // check if this node has visited before
+      auto &posInfo = infoTable[now.pos];
+      if (now.gCost > posInfo.gCost) continue;
+
+      // check if this node is the goal
       if (goal.isSuitableGoal(now.pos)) {
         if (now.pos == to) {
           found = true;
@@ -112,17 +117,17 @@ class AstarFinder
           last = now;
         }
       }
+
       // check if time is up
       if (BASE::isTimeUp(startTime, timeLimit)) {
         timeUp = true;
         break;
       }
+
       if (foundSuitable && BASE::isTimeUp(extraStartTime, extraTimeLimit)) {
         break;
       }
-      // check if this node has visited before
-      auto &posInfo = infoTable[now.pos];
-      if (now.gCost > posInfo.gCost) continue;
+      
       // record node count
       nodeCount++;
       if (nodeLimit > 0 && nodeCount >= nodeLimit) {
@@ -130,42 +135,36 @@ class AstarFinder
         break;
       }
 
-      // check jump
-      bool canJump =
-          BASE::getBlockType(now.pos + TPos{0, 3, 0}).is(BlockType::AIR);
-
       // find neighbour
       for (const Direction &dir : directions) {
         std::vector<TPos> newOffsets = BASE::isAbleToWalkTo(
             now.pos, dir.offset, config.fallingDamageTolerance);
         for (TPos &newOffset : newOffsets) {
-          if (newOffset.abs().sum() > 0) {
-            CostT addGCost = dir.cost;
-            if (newOffset.y > 0)
-              addGCost += climbCost * (newOffset.y);
-            else if (newOffset.y < 0)
-              addGCost += fallCost * (-newOffset.y);
+          CostT addGCost = dir.cost;
+          if (newOffset.y > 0)
+            addGCost += climbCost * (newOffset.y);
+          else if (newOffset.y < 0)
+            addGCost += fallCost * (-newOffset.y);
 
-            // add new position
-            const TPos newPos = now.pos + newOffset;
-            const TPos &parent = now.pos;
-            const CostT newGCost = now.gCost + addGCost;
+          // add new position
+          const TPos newPos = now.pos + newOffset;
+          const TPos &parent = now.pos;
+          const CostT newGCost = now.gCost + addGCost;
 
-            auto found_it = infoTable.find(newPos);
-            if (found_it != infoTable.end()) {
-              CostT &PreGCost = found_it->second.gCost;
-              // compare the gCost and reserve the one with lower cost
-              if (newGCost < PreGCost) {
-                found_it->second.parent = parent;
-                found_it->second.gCost = newGCost;
-                pq.emplace(newPos, newGCost,
-                           found_it->second.hCost);  // lazy deletion
-              }
-            } else {
-              CostT newHCost = TEstimateEval::eval(newPos, to);
-              pq.emplace(newPos, newGCost, newHCost);
-              infoTable[newPos] = {parent, newGCost, newHCost};
+          auto found_it = infoTable.find(newPos);
+          if (found_it != infoTable.end()) {
+            CostT &PreGCost = found_it->second.gCost;
+            // compare the gCost and reserve the one with lower cost
+            if (newGCost < PreGCost) {
+              found_it->second.parent = parent;
+              found_it->second.gCost = newGCost;
+              pq.emplace(newPos, newGCost,
+                          found_it->second.hCost);  // lazy deletion
             }
+          } else {
+            CostT newHCost = TEstimateEval::eval(newPos, to);
+            pq.emplace(newPos, newGCost, newHCost);
+            infoTable[newPos] = {parent, newGCost, newHCost};
           }
         }
       }
