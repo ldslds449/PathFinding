@@ -66,9 +66,9 @@ class FinderBase {
   inline bool findPathAndGo(const TPos &from, const goal::GoalBase<TPos> &goal,
                             const U64 &timeLimit = 0, const U64 &nodeLimit = 0,
                             const U64 &extraTimeLimit = 100,
-                            const int &retry = 10) {
+                            const int &retry = 20) {
     auto run = [&](const TPos &nowFrom, const goal::GoalBase<TPos> &nowGoal)
-        -> std::tuple<bool, bool, TPos> {  // find path error, move error, goal
+        -> std::tuple<bool, bool, TPos> {  // find path error, move error, current location
       std::cout << "Find Path... (From: " << nowFrom << ")\n" << std::flush;
       auto t1 = std::chrono::steady_clock::now();
       auto r = findPath(nowFrom, nowGoal, timeLimit, nodeLimit, extraTimeLimit);
@@ -98,10 +98,10 @@ class FinderBase {
       std::cout << "Executing...\n" << std::flush;
       if (!go(path)) {  // error occur during moving
         std::cout << "Move Failed!\n" << std::flush;
-        return {false, true, TPos()};
+        return {false, true, getPlayerLocation()};
       } else if (getPlayerLocation() != (*path)[path->size() - 1]) {  // destination isn't match
         std::cout << "Move Failed! (Destination isn't match)\n" << std::flush;
-        return {false, true, TPos()};
+        return {false, true, getPlayerLocation()};
       } else {  // success
         std::cout << "Done\n" << std::flush;
         return {false, false, (*path)[path->size() - 1]};
@@ -111,6 +111,7 @@ class FinderBase {
     TPos lastPos = from, nowGoalPos;
     const TPos &goalPos = goal.getGoalPosition();
     const int step = 2 * 16;  // 2 chunks
+    const int far_threshold = 3 * 16;  // 3 chunks
 
     for (int i = 0;; ++i) {
       // check retry time
@@ -119,18 +120,23 @@ class FinderBase {
         return false;
       }
 
-      // the goal is in a unload chunk
-      if (getBlockType(goalPos).is(BlockType::UNKNOWN)) {
-        const TPos vec = goalPos - lastPos;
+      // the goal is in a unload chunk, or the goal is too far away from the player
+      const TPos vec = goalPos - lastPos;
+      const TPos vecXZ = vec.getXZ();
+      bool goal_is_in_unload_chunk = getBlockType(goalPos).is(BlockType::UNKNOWN);
+      bool goal_is_too_far = vecXZ.sum() > far_threshold;
+      if (goal_is_in_unload_chunk || goal_is_too_far) {
         const auto vecUnit =
-            static_cast<const Vec3<double>>(vec) / std::sqrt(vec.squaredNorm());
+            static_cast<const Vec3<double>>(vecXZ) / std::sqrt(vecXZ.squaredNorm());
 
         nowGoalPos.x = lastPos.x + std::floor(vecUnit.x * step);
         nowGoalPos.y = lastPos.y;
         nowGoalPos.z = lastPos.z + std::floor(vecUnit.z * step);
 
         std::cout << "Position " << goalPos
-                  << " is in an unload chunk, try to get closer " << nowGoalPos
+                  << (goal_is_in_unload_chunk ? " is in an unload chunk" : "")
+                  << (goal_is_too_far ? " is too far away from the player" : "")
+                  << ", try to get closer " << nowGoalPos
                   << " to load the chunk." << std::endl
                   << std::flush;
 
@@ -141,7 +147,7 @@ class FinderBase {
         } else if (std::get<1>(result)) {
           std::cout << "Moving Error, replanning the path\n" << std::flush;
         }
-        lastPos = getPlayerLocation();
+        lastPos = std::get<2>(result);
         continue;
       } else {
         auto result = run(lastPos, goal);
@@ -150,7 +156,7 @@ class FinderBase {
           return false;
         } else if (std::get<1>(result)) {
           std::cout << "Moving Error, replanning the path\n" << std::flush;
-          lastPos = getPlayerLocation();
+          lastPos = std::get<2>(result);
           continue;
         } else {
           return true;
