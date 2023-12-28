@@ -96,12 +96,16 @@ class FinderBase {
         return {true, false, TPos()};
       }
       std::cout << "Executing...\n" << std::flush;
-      if (!go(path)) {
+      if (!go(path)) {  // error occur during moving
         std::cout << "Move Failed!\n" << std::flush;
         return {false, true, TPos()};
+      } else if (getPlayerLocation() != (*path)[path->size() - 1]) {  // destination isn't match
+        std::cout << "Move Failed! (Destination isn't match)\n" << std::flush;
+        return {false, true, TPos()};
+      } else {  // success
+        std::cout << "Done\n" << std::flush;
+        return {false, false, (*path)[path->size() - 1]};
       }
-      std::cout << "Done\n" << std::flush;
-      return {false, false, (*path)[path->size() - 1]};
     };
 
     TPos lastPos = from, nowGoalPos;
@@ -135,7 +139,7 @@ class FinderBase {
           std::cout << "Find Path Error\n" << std::flush;
           return false;
         } else if (std::get<1>(result)) {
-          std::cout << "Move Path Error, replanning the path\n" << std::flush;
+          std::cout << "Moving Error, replanning the path\n" << std::flush;
         }
         lastPos = getPlayerLocation();
         continue;
@@ -145,7 +149,7 @@ class FinderBase {
           std::cout << "Find Path Error\n" << std::flush;
           return false;
         } else if (std::get<1>(result)) {
-          std::cout << "Move Path Error, replanning the path\n" << std::flush;
+          std::cout << "Moving Error, replanning the path\n" << std::flush;
           lastPos = getPlayerLocation();
           continue;
         } else {
@@ -525,12 +529,12 @@ class FinderBase {
         if (getFallDamage(to, upPos.y - blocksPos[COORD::ORIG].y) <=
             fallDamageTol) {
           TPos platformPos = upPos + XZoffset,
-             platformPos_up1 = platformPos + TPos{0, 1, 0},
-             platformPos_up2 = platformPos + TPos{0, 2, 0},
-             platformPos_z1 = platformPos + TPos{0, 1, XZoffset.z},
-             platformPos_z2 = platformPos + TPos{0, 2, XZoffset.z},
-             platformPos_x1 = platformPos + TPos{XZoffset.x, 1, 0},
-             platformPos_x2 = platformPos + TPos{XZoffset.x, 2, 0};
+               platformPos_up1 = platformPos + TPos{0, 1, 0},
+               platformPos_up2 = platformPos + TPos{0, 2, 0},
+               platformPos_z1 = platformPos + TPos{0, 1, XZoffset.z},
+               platformPos_z2 = platformPos + TPos{0, 2, XZoffset.z},
+               platformPos_x1 = platformPos + TPos{XZoffset.x, 1, 0},
+               platformPos_x2 = platformPos + TPos{XZoffset.x, 2, 0};
           if (getBlockType(platformPos).is(BlockType::SAFE) &&
               getBlockType(platformPos_up1).is(BlockType::AIR) &&
               getBlockType(platformPos_up2).is(BlockType::AIR) &&
