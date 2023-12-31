@@ -24,7 +24,7 @@ class AstarFinder
       AstarFinder<TDrived, TWeighted, TEstimateEval, TEdgeEval, TPos>, TPos>;
 
  public:
-  virtual std::pair<PathResult, std::shared_ptr<Path<TPos>>> findPathImpl(
+  virtual std::tuple<PathResult, std::shared_ptr<Path<TPos>>, U64> findPathImpl(
       const TPos &from, const goal::GoalBase<TPos> &goal, const U64 &timeLimit,
       const U64 &nodeLimit, const U64 &extraTimeLimit) const override {
     // a node in A*
@@ -181,13 +181,13 @@ class AstarFinder
         nowPos = newPos;
       }
       path->reverse();
-      return {PathResult::FOUND, path};
+      return {PathResult::FOUND, path, nodeCount};
     } else if (timeUp) {
-      return {PathResult::TIME_LIMIT_EXCEED, path};
+      return {PathResult::TIME_LIMIT_EXCEED, path, nodeCount};
     } else if (nodeSearchExceed) {
-      return {PathResult::NODE_SEARCH_LIMIT_EXCEED, path};
+      return {PathResult::NODE_SEARCH_LIMIT_EXCEED, path, nodeCount};
     } else {
-      return {PathResult::NOT_FOUND, path};
+      return {PathResult::NOT_FOUND, path, nodeCount};
     }
   }
 

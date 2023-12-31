@@ -26,7 +26,7 @@ class IDAstarFinder
       IDAstarFinder<TDrived, TWeighted, TEstimateEval, TEdgeEval, TPos>, TPos>;
 
  public:
-  virtual std::pair<PathResult, std::shared_ptr<Path<TPos>>> findPathImpl(
+  virtual std::tuple<PathResult, std::shared_ptr<Path<TPos>>, U64> findPathImpl(
       const TPos &from, const goal::GoalBase<TPos> &goal, const U64 &timeLimit,
       const U64 &nodeLimit, const U64 &extraTimeLimit) const override {
     CostT costLimit = TEstimateEval::eval(from, goal.getGoalPosition());
@@ -37,14 +37,14 @@ class IDAstarFinder
                                   extraTimeLimit, costLimit);
       auto end = std::chrono::steady_clock::now();
       if (std::get<0>(r) == PathResult::FOUND)
-        return {PathResult::FOUND, std::get<1>(r)};  // found
+        return {PathResult::FOUND, std::get<1>(r), std::get<3>(r)};  // found
       else if (std::get<0>(r) == PathResult::NOT_FOUND &&
                std::get<2>(r) == costLimit)
-        return {PathResult::NOT_FOUND, std::get<1>(r)};  // not found
+        return {PathResult::NOT_FOUND, std::get<1>(r), std::get<3>(r)};  // not found
       else if (std::get<0>(r) == PathResult::TIME_LIMIT_EXCEED)
-        return {PathResult::TIME_LIMIT_EXCEED, std::get<1>(r)};
+        return {PathResult::TIME_LIMIT_EXCEED, std::get<1>(r), std::get<3>(r)};
       else if (std::get<0>(r) == PathResult::NODE_SEARCH_LIMIT_EXCEED)
-        return {PathResult::NODE_SEARCH_LIMIT_EXCEED, std::get<1>(r)};
+        return {PathResult::NODE_SEARCH_LIMIT_EXCEED, std::get<1>(r), std::get<3>(r)};
       costLimit = std::get<2>(r);
       std::cout << "Path not found, set cost limit to " << costLimit << "\n";
       nowTimeLimit -=

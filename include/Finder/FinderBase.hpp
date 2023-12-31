@@ -33,7 +33,7 @@ class FinderBase {
   /*
    * Find a path to the goal
    */
-  inline std::pair<PathResult, std::shared_ptr<Path<TPos>>> findPath(
+  inline std::tuple<PathResult, std::shared_ptr<Path<TPos>>, U64> findPath(
       const TPos &from, const goal::GoalBase<TPos> &goal,
       const U64 &timeLimit = 0, const U64 &nodeLimit = 0,
       const U64 &extraTimeLimit = 100) const {
@@ -73,9 +73,11 @@ class FinderBase {
       auto t1 = std::chrono::steady_clock::now();
       auto r = findPath(nowFrom, nowGoal, timeLimit, nodeLimit, extraTimeLimit);
       auto t2 = std::chrono::steady_clock::now();
-      auto path = r.second;
+      auto &path = std::get<1>(r);
+      auto &nodeSearch = std::get<2>(r);
 
       std::cout << "Length: " << path->size() << std::endl;
+      std::cout << "Node Search: " << nodeSearch << std::endl;
       std::cout << "Took: "
                 << std::chrono::duration_cast<std::chrono::milliseconds>(t2 -
                                                                          t1)
@@ -84,11 +86,11 @@ class FinderBase {
                 << std::flush;
 
       if (path->size() == 0) {
-        if (r.first == PathResult::NOT_FOUND) {
+        if (std::get<0>(r) == PathResult::NOT_FOUND) {
           std::cout << "Path Not Found" << std::endl << std::flush;
-        } else if (r.first == PathResult::TIME_LIMIT_EXCEED) {
+        } else if (std::get<0>(r) == PathResult::TIME_LIMIT_EXCEED) {
           std::cout << "Time Limit Exceed" << std::endl << std::flush;
-        } else if (r.first == PathResult::NODE_SEARCH_LIMIT_EXCEED) {
+        } else if (std::get<0>(r) == PathResult::NODE_SEARCH_LIMIT_EXCEED) {
           std::cout << "Node Search Limit Exceed" << std::endl << std::flush;
         } else {
           std::cout << "Unknown Error" << std::endl << std::flush;
@@ -221,7 +223,7 @@ class FinderBase {
   /*
    * This should be implemented in subclass
    */
-  virtual std::pair<PathResult, std::shared_ptr<Path<TPos>>> findPathImpl(
+  virtual std::tuple<PathResult, std::shared_ptr<Path<TPos>>, U64> findPathImpl(
       const TPos &from, const goal::GoalBase<TPos> &goal, const U64 &timeLimit,
       const U64 &nodeLimit, const U64 &extraTimeLimit) const = 0;
 
