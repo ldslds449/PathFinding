@@ -70,7 +70,9 @@ class FinderBase {
     auto run = [&](const TPos &nowFrom, const goal::GoalBase<TPos> &nowGoal)
         -> std::tuple<bool, bool,
                       TPos> {  // find path error, move error, current location
-      std::cout << "Find Path... (From: " << nowFrom << ")\n" << std::flush;
+      std::cout << "Find Path... (From: " << nowFrom
+                << ", To: " << goal.getGoalPosition() << ")\n"
+                << std::flush;
       auto t1 = std::chrono::steady_clock::now();
       auto r = findPath(nowFrom, nowGoal, timeLimit, nodeLimit, extraTimeLimit);
       auto t2 = std::chrono::steady_clock::now();

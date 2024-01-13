@@ -38,8 +38,8 @@ class RangeGoal : public GoalBase<TPos> {
         z_tol_pos(_z_tol),
         z_tol_neg(_z_tol) {}
 
-  RangeGoal(const TPos &_goalPos, const T &_x_tol_pos, const T &_y_tol_pos,
-            const T &_z_tol_pos, const T &_x_tol_neg, const T &_y_tol_neg,
+  RangeGoal(const TPos &_goalPos, const T &_x_tol_pos, const T &_x_tol_neg,
+            const T &_y_tol_pos, const T &_y_tol_neg, const T &_z_tol_pos,
             const T &_z_tol_neg)
       : GoalBase<TPos>(_goalPos),
         x_tol_pos(_x_tol_pos),
