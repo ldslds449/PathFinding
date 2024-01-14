@@ -175,32 +175,11 @@ class FinderBase {
   }
 
   /*
-   * Get the block name of the block at a specific position
-   */
-  inline std::string getBlockName(const TPos &pos) const {
-    return static_cast<const TDrived *>(this)->getBlockNameImpl(pos);
-  }
-
-  inline std::vector<std::string> getBlockName(
-      const std::vector<TPos> &pos) const {
-    return static_cast<const TDrived *>(this)->getBlockNameImpl(pos);
-  }
-
-  /*
    * Get the block type of the block at a specific position
    */
 
   inline BlockType getBlockType(const TPos &pos) const {
     return static_cast<const TDrived *>(this)->getBlockTypeImpl(pos);
-  }
-
-  inline std::vector<BlockType> getBlockType(
-      const std::vector<TPos> &pos) const {
-    return static_cast<const TDrived *>(this)->getBlockTypeImpl(pos);
-  }
-
-  inline BlockType getBlockType(const std::string &blockName) const {
-    return static_cast<const TDrived *>(this)->getBlockTypeImpl(blockName);
   }
 
   /*
@@ -246,89 +225,14 @@ class FinderBase {
   /*
    * This should be implemented in subclass
    */
-  virtual std::string getBlockNameImpl(const TPos &pos) const = 0;
-
-  virtual std::vector<std::string> getBlockNameImpl(
-      const std::vector<TPos> &pos) const {
-    std::vector<std::string> names;
-    for (const TPos &p : pos) {
-      names.push_back(getBlockNameImpl(p));
-    }
-    return names;
-  }
+  virtual BlockType getBlockTypeImpl(const TPos &pos) const = 0;
 
   /*
-   * Override this if needed
-   */
-  virtual BlockType getBlockTypeImpl(const TPos &pos) const {
-    const std::string blockName = getBlockName(pos);
-    return getBlockTypeImpl(blockName);
-  }
-
-  virtual std::vector<BlockType> getBlockTypeImpl(
-      const std::vector<TPos> &pos) const {
-    const std::vector<std::string> &blockNames = getBlockName(pos);
-    std::vector<BlockType> blockTypes;
-    for (const std::string &name : blockNames) {
-      blockTypes.push_back(getBlockTypeImpl(name));
-    }
-    return blockTypes;
-  }
-
-  virtual BlockType getBlockTypeImpl(const std::string &blockName) const {
-    const BlockType defaultBlockType = {BlockType::SAFE, BlockType::NONE};
-    const std::unordered_map<std::string, BlockType> blockTable = {
-        {"", {BlockType::UNKNOWN, BlockType::NONE}},
-        {"minecraft:air", {BlockType::AIR, BlockType::FORCE_DOWN}},
-        {"minecraft:lava", {BlockType::DANGER, BlockType::FORCE_DOWN}},
-        {"minecraft:water", {BlockType::DANGER, BlockType::FORCE_DOWN}},
-        {"minecraft:cactus", {BlockType::DANGER, BlockType::NONE}},
-        {"minecraft:campfire", {BlockType::DANGER, BlockType::NONE}},
-        {"minecraft:magma_block", {BlockType::DANGER, BlockType::NONE}},
-        {"minecraft:wither_rose", {BlockType::DANGER, BlockType::NONE}},
-        {"minecraft:cave_vines", {BlockType::AIR, BlockType::CAN_UP_DOWN}},
-        {"minecraft:cave_vines_plant",
-         {BlockType::AIR, BlockType::CAN_UP_DOWN}},
-        {"minecraft:ladder", {BlockType::AIR, BlockType::CAN_UP_DOWN}},
-        {"minecraft:vine", {BlockType::AIR, BlockType::CAN_UP_DOWN}},
-        {"minecraft:weeping_vines", {BlockType::AIR, BlockType::CAN_UP_DOWN}},
-        {"minecraft:weeping_vines_plant",
-         {BlockType::AIR, BlockType::CAN_UP_DOWN}},
-        {"minecraft:scaffolding", {BlockType::AIR, BlockType::CAN_UP_DOWN}},
-        {"minecraft:twisting_vines", {BlockType::AIR, BlockType::CAN_UP_DOWN}},
-        {"minecraft:twisting_vines_plant",
-         {BlockType::AIR, BlockType::CAN_UP_DOWN}},
-        {"minecraft:chest", {BlockType::DANGER, BlockType::NONE}}};
-    auto it = blockTable.find(blockName);
-    return it != blockTable.end() ? it->second : defaultBlockType;
-  }
-
-  /*
-   * Override this if needed
+   * This should be implemented in subclass
    */
   virtual float getFallDamageImpl(
-      const TPos &landingPos, const typename TPos::value_type &height) const {
-    if (height < 3.375) return 0.0;
-    float damage = std::floor(height - 3.375) + 1;
-
-    std::string landingBlock = getBlockName(landingPos);
-    if (landingBlock == "minecraft:hay_block" ||
-        landingBlock == "minecraft:honey_block") {
-      damage *= 0.2;
-    } else if (std::regex_match(landingBlock,
-                                std::regex("minecraft:\\w+_bed"))) {
-      damage *= 0.5;
-    } else if (landingBlock == "minecraft:slime_block" ||
-               landingBlock == "minecraft:powder_snow" ||
-               landingBlock == "minecraft:water" ||
-               landingBlock == "minecraft:cobweb" ||
-               landingBlock == "minecraft:web") {
-      damage = 0;
-    } else if (landingBlock == "minecraft:pointed_dripstone") {
-      damage = height * 2 - 2;
-    }
-    return damage;
-  };
+      const TPos &landingPos,
+      const typename TPos::value_type &height) const = 0;
 
   /*
    * This should be implemented in subclass
@@ -387,7 +291,10 @@ class FinderBase {
       ORIG_UP1,
       ORIG_UP2,
     };
-    const std::vector<BlockType> &blockTypes = getBlockType(blocksPos);
+    std::vector<BlockType> blockTypes(blocksPos.size());
+    for(unsigned i = 0; i < blocksPos.size(); ++i){
+      blockTypes[i] = getBlockType(blocksPos[i]);
+    }
     std::vector<TPos> possiblePos;
 
     // walk
@@ -501,7 +408,10 @@ class FinderBase {
       ORIG,
       ORIG_UP3,
     };
-    const std::vector<BlockType> &blockTypes = getBlockType(blocksPos);
+    std::vector<BlockType> blockTypes(blocksPos.size());
+    for(unsigned i = 0; i < blocksPos.size(); ++i){
+      blockTypes[i] = getBlockType(blocksPos[i]);
+    }
     bool canJump = blockTypes[COORD::FLOOR_UP2].is(BlockType::AIR);
     std::vector<TPos> possiblePos;
 
