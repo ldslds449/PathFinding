@@ -101,7 +101,8 @@ class FinderBase {
         return {true, false, TPos()};
       }
       std::cout << "Executing...\n" << std::flush;
-      if (!go(path)) {  // error occur during moving
+      if (!(go(path) || go(path) || go(path))) {  // 3 chances
+        // error occur during moving
         std::cout << "Move Failed!\n" << std::flush;
         return {false, true, getPlayerLocation()};
       } else if (getPlayerLocation() !=
@@ -292,7 +293,7 @@ class FinderBase {
       ORIG_UP2,
     };
     std::vector<BlockType> blockTypes(blocksPos.size());
-    for(unsigned i = 0; i < blocksPos.size(); ++i){
+    for (unsigned i = 0; i < blocksPos.size(); ++i) {
       blockTypes[i] = getBlockType(blocksPos[i]);
     }
     std::vector<TPos> possiblePos;
@@ -409,7 +410,7 @@ class FinderBase {
       ORIG_UP3,
     };
     std::vector<BlockType> blockTypes(blocksPos.size());
-    for(unsigned i = 0; i < blocksPos.size(); ++i){
+    for (unsigned i = 0; i < blocksPos.size(); ++i) {
       blockTypes[i] = getBlockType(blocksPos[i]);
     }
     bool canJump = blockTypes[COORD::FLOOR_UP2].is(BlockType::AIR);
