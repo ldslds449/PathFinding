@@ -101,7 +101,7 @@ class FinderBase {
         return {true, false, TPos()};
       }
       std::cout << "Executing...\n" << std::flush;
-      if (!(go(path) || go(path) || go(path))) {  // 3 chances
+      if (!go(path)) {
         // error occur during moving
         std::cout << "Move Failed!\n" << std::flush;
         return {false, true, getPlayerLocation()};
