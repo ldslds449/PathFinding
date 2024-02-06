@@ -2,10 +2,10 @@
 #define PATHFINDING_FINDER_ASTARFINDER_H_
 
 #include <chrono>
-#include <queue>
 
 #include "Evaluate/Evaluate.hpp"
 #include "Finder/FinderBase.hpp"
+#include "Heap/TableHeap.hpp"
 #include "Type.hpp"
 #include "Vec3.hpp"
 #include "Weighted/Weighted.hpp"
@@ -27,19 +27,11 @@ class AstarFinder
   virtual std::tuple<PathResult, std::shared_ptr<Path<TPos>>, U64> findPathImpl(
       const TPos &from, const goal::GoalBase<TPos> &goal, const U64 &timeLimit,
       const U64 &nodeLimit, const U64 &extraTimeLimit) const override {
-    // a node in A*
-    struct Node {
-      TPos pos;
-      CostT gCost, hCost;
-      Node(const TPos &p, const CostT &g, const CostT &h)
-          : pos(p), gCost(g), hCost(h) {}
-      Node() = default;
-    };
 
     // record the information of a node
     struct PosInfo {
       TPos parent;
-      CostT gCost, hCost;  // the lowest gCost, hCost of key
+      bool closed;  // whether is in close set
     };
 
     // direction to generate next node
@@ -56,12 +48,12 @@ class AstarFinder
     decltype(startTime) extraStartTime;
 
     // compare function for priority queue, sort Node
-    auto pq_cmp = [](const Node &a, const Node &b) {
+    auto heap_cmp = [](const std::pair<CostT, CostT> &a, const std::pair<CostT, CostT> &b) {
       // from lowest cost to largest cost
-      return TWeighted::combine(a.gCost, a.hCost) >
-             TWeighted::combine(b.gCost, b.hCost);
+      return TWeighted::combine(a.first, a.second) >
+             TWeighted::combine(b.first, b.second);
     };
-    std::priority_queue<Node, std::vector<Node>, decltype(pq_cmp)> pq(pq_cmp);
+    TableHeap<TPos, std::pair<CostT, CostT>, decltype(heap_cmp)> heap(heap_cmp);
 
     // key: Position
     // value: {Parent, gCost of key, hCost of key}
@@ -80,31 +72,30 @@ class AstarFinder
     const CostT climbCost = TEdgeEval::eval(TPos{0, 1, 0});
 
     // add initial state
-    pq.emplace(from, 0, TEstimateEval::eval(from, to));
+    heap.update(from, {0, TEstimateEval::eval(from, to)});
     // gCost and hCost are useless
-    infoTable[from] = {from, 0, 0};
+    infoTable[from] = {from, false};
 
     // for loop to find a path to goal
-    Node last;
+    TPos last;
     bool found = false, foundSuitable = false;
     bool timeUp = false, nodeSearchExceed = false;
     U64 nodeCount = 0;
-    while (!pq.empty()) {
-      Node now = pq.top();
-      pq.pop();
+    while (heap.size() > 0) {
+      CostT nowGCost = heap.lookup(heap.top()).first;
+      TPos now = heap.extract();
 
-      // check if this node has visited before
-      auto &posInfo = infoTable[now.pos];
-      if (now.gCost > posInfo.gCost) continue;
+      // add to close set
+      infoTable[now].closed = true;
 
       // check if this node is the goal
-      if (goal.isSuitableGoal(now.pos)) {
-        if (now.pos == to) {
+      if (goal.isSuitableGoal(now)) {
+        if (now == to) {
           found = true;
           last = now;
           break;
         } else if (foundSuitable) {
-          if (TEstimateEval::eval(now.pos) < TEstimateEval::eval(last.pos)) {
+          if (TEstimateEval::eval(now) < TEstimateEval::eval(last)) {
             last = now;
           }
         } else if (!goalExist) {
@@ -127,7 +118,7 @@ class AstarFinder
       if (foundSuitable && BASE::isTimeUp(extraStartTime, extraTimeLimit)) {
         break;
       }
-      
+
       // record node count
       nodeCount++;
       if (nodeLimit > 0 && nodeCount >= nodeLimit) {
@@ -138,7 +129,7 @@ class AstarFinder
       // find neighbour
       for (const Direction &dir : directions) {
         std::vector<TPos> newOffsets = BASE::isAbleToWalkTo(
-            now.pos, dir.offset, config.fallingDamageTolerance);
+            now, dir.offset, config.fallingDamageTolerance);
         for (TPos &newOffset : newOffsets) {
           CostT addGCost = dir.cost;
           if (newOffset.y > 0)
@@ -147,24 +138,24 @@ class AstarFinder
             addGCost += fallCost * (-newOffset.y);
 
           // add new position
-          const TPos newPos = now.pos + newOffset;
-          const TPos &parent = now.pos;
-          const CostT newGCost = now.gCost + addGCost;
+          const TPos newPos = now + newOffset;
+          const TPos &parent = now;
+          const CostT newGCost = nowGCost + addGCost;
 
           auto found_it = infoTable.find(newPos);
           if (found_it != infoTable.end()) {
-            CostT &PreGCost = found_it->second.gCost;
-            // compare the gCost and reserve the one with lower cost
-            if (newGCost < PreGCost) {
-              found_it->second.parent = parent;
-              found_it->second.gCost = newGCost;
-              pq.emplace(newPos, newGCost,
-                          found_it->second.hCost);  // lazy deletion
+            if(!found_it->second.closed){
+              auto PreCost = heap.lookup(newPos);
+              // compare the gCost and reserve the one with lower cost
+              if (newGCost < PreCost.first) {
+                found_it->second.parent = parent;
+                heap.update(newPos, {newGCost, PreCost.second});
+              }
             }
           } else {
             CostT newHCost = TEstimateEval::eval(newPos, to);
-            pq.emplace(newPos, newGCost, newHCost);
-            infoTable[newPos] = {parent, newGCost, newHCost};
+            heap.update(newPos, {newGCost, newHCost});
+            infoTable[newPos] = {parent, false};
           }
         }
       }
@@ -173,7 +164,7 @@ class AstarFinder
     // back tracking to get the whole path
     std::shared_ptr<Path<TPos>> path = std::make_shared<Path<TPos>>();
     if (found || foundSuitable) {
-      TPos nowPos = last.pos;
+      TPos nowPos = last;
       while (true) {
         path->add(nowPos);
         TPos &newPos = infoTable[nowPos].parent;
