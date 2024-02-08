@@ -8,7 +8,7 @@
 
 #define L_CHILD(idx) ((idx) * 2 + 1)
 #define R_CHILD(idx) ((idx) * 2 + 2)
-#define PARENT(idx) ((idx - 1) / 2)
+#define PARENT(idx) (((idx) - 1) / 2)
 
 namespace pathfinding {
 
@@ -66,7 +66,7 @@ class TableHeap {
       if (top == PARENT(idx)) break;  // stable
       std::swap(table[arr[idx]].idx, table[arr[top]].idx);
       std::swap(arr[idx], arr[top]);
-      idx = top;
+      idx = PARENT(idx);
     }
   }
 

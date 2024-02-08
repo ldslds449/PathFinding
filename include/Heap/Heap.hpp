@@ -52,7 +52,7 @@ class Heap {
       std::size_t top = compare(idx, PARENT(idx));
       if (top == PARENT(idx)) break;  // stable
       std::swap(arr[idx], arr[top]);
-      idx = top;
+      idx = PARENT(idx);
     }
   }
 

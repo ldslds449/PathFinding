@@ -50,7 +50,7 @@ class AstarFinder
     // compare function for priority queue, sort Node
     auto heap_cmp = [](const std::pair<CostT, CostT> &a, const std::pair<CostT, CostT> &b) {
       // from lowest cost to largest cost
-      return TWeighted::combine(a.first, a.second) >
+      return TWeighted::combine(a.first, a.second) <
              TWeighted::combine(b.first, b.second);
     };
     TableHeap<TPos, std::pair<CostT, CostT>, decltype(heap_cmp)> heap(heap_cmp);
