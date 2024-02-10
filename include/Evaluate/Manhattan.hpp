@@ -11,7 +11,7 @@ class Manhattan final : public EvaluateBase<Manhattan> {
  public:
   template <class TPos>
   static CostT evalImpl(const TPos &pos, const TPos &target) {
-    return pos.manhattanDist(target);
+    return static_cast<CostT>(pos.manhattanDist(target));
   };
 
   Manhattan() = delete;

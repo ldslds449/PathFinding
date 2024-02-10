@@ -250,8 +250,10 @@ class FinderBase {
                        const U64 &timeLimit) const {
     if (timeLimit == 0) return false;
     auto now = std::chrono::steady_clock::now();
-    return std::chrono::duration_cast<std::chrono::milliseconds>(now - start)
-               .count() >= timeLimit;
+    return static_cast<U64>(
+               std::chrono::duration_cast<std::chrono::milliseconds>(now -
+                                                                     start)
+                   .count()) >= timeLimit;
   }
 
   std::vector<TPos> isAbleToWalkTo(const TPos &from, const TPos &XZoffset,
