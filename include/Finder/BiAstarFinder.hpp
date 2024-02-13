@@ -95,6 +95,8 @@ class BiAstarFinder
     forward.infoTable[from] = {from, 0, 0, false};
     backward.infoTable[to] = {to, 0, 0, false};
 
+    const bool goalExist = BASE::isGoalExist(goal);
+
     // for loop to find a path to goal
     TPos last;
     bool found = false;
@@ -174,30 +176,35 @@ class BiAstarFinder
     // back tracking to get the whole path
     std::shared_ptr<Path<TPos>> path = std::make_shared<Path<TPos>>();
     if (found) {
+      std::vector<TPos> origPath;
       // forward
       {
+        std::stack<TPos> st;
         TPos nowPos = last;
         while (true) {
           TPos &newPos = forward.infoTable[nowPos].parent;
           if (newPos == nowPos) break;
           nowPos = newPos;
-          path->add(nowPos);
+          st.push(nowPos);
         }
-        path->reverse();
+        while (!st.empty()) {
+          origPath.emplace_back(st.top());
+          st.pop();
+        }
       }
       // backward
       {
         TPos nowPos = last;
         while (true) {
-          path->add(nowPos);
+          origPath.push_back(nowPos);
           TPos &newPos = backward.infoTable[nowPos].parent;
           if (newPos == nowPos) break;
           nowPos = newPos;
         }
       }
-      // pop non-goal nodes
-      while (!goal.isSuitableGoal(path->back())) {
-        path->pop_back();
+      for (auto &pos : origPath) {
+        path->add(pos);
+        if (!goalExist && goal.isSuitableGoal(pos)) break;
       }
       return {PathResult::FOUND, path, nodeCount};
     } else if (timeUp) {
