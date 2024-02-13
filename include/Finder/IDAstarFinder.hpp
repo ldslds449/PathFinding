@@ -28,13 +28,12 @@ class IDAstarFinder
  public:
   virtual std::tuple<PathResult, std::shared_ptr<Path<TPos>>, U64> findPathImpl(
       const TPos &from, const goal::GoalBase<TPos> &goal, const U64 &timeLimit,
-      const U64 &nodeLimit, const U64 &extraTimeLimit) const override {
+      const U64 &nodeLimit) override {
     CostT costLimit = TEstimateEval::eval(from, goal.getGoalPosition());
     U64 nowTimeLimit = timeLimit, nowNodeLimit = nodeLimit;
     while (true) {
       auto start = std::chrono::steady_clock::now();
-      auto r = AstarWithCostLimit(from, goal, nowTimeLimit, nowNodeLimit,
-                                  extraTimeLimit, costLimit);
+      auto r = AstarWithCostLimit(from, goal, nowTimeLimit, nowNodeLimit, costLimit);
       auto end = std::chrono::steady_clock::now();
       if (std::get<0>(r) == PathResult::FOUND)
         return {PathResult::FOUND, std::get<1>(r), std::get<3>(r)};  // found
@@ -70,7 +69,7 @@ class IDAstarFinder
   std::tuple<PathResult, std::shared_ptr<Path<TPos>>, CostT, U64>
   AstarWithCostLimit(const TPos &from, const goal::GoalBase<TPos> &goal,
                      const U64 &timeLimit, const U64 &nodeLimit,
-                     const CostT &costLimit) const {
+                     const CostT &costLimit) {
     struct Node {
       TPos pos;
       CostT gcost;
@@ -115,8 +114,7 @@ class IDAstarFinder
     stackList.insert(from);
 
     // for loop to find a path to goal
-    TPos last;
-    bool found = false, foundSuitable = false;
+    bool found = false;
     bool timeUp = false, nodeSearchExceed = false;
     CostT minExceedCost = std::numeric_limits<CostT>::max();  // maximum
     U64 nodeCount = 0;
@@ -125,22 +123,8 @@ class IDAstarFinder
 
       // check whether we reach the goal
       if (goal.isSuitableGoal(now.pos)) {
-        if (now.pos == to) {
-          last = now.pos;
-          found = true;
-          break;
-        } else if (foundSuitable) {
-          if (TEstimateEval::eval(now.pos) < TEstimateEval::eval(last.pos)) {
-            last = now;
-          }
-        } else if (!goalExist) {
-          foundSuitable = true;
-          last = now;
-          break;
-        } else {
-          foundSuitable = true;
-          last = now;
-        }
+        found = true;
+        break;
       }
 
       if (BASE::isTimeUp(startTime, timeLimit)) {
@@ -171,7 +155,7 @@ class IDAstarFinder
       // get next neighbour
       const Direction &dir = directions[now.dirIdx];
 
-      TPos newOffsets = BASE::isAbleToWalkTo(now.pos, dir.offset,
+      std::vector<TPos> newOffsets = BASE::isAbleToWalkTo(now.pos, dir.offset,
                                              config.fallingDamageTolerance);
       for (TPos &newOffset : newOffsets) {
         if (newOffset.abs().sum() > 0) {
@@ -201,7 +185,7 @@ class IDAstarFinder
 
     // back tracking to get the whole path
     std::shared_ptr<Path<TPos>> path = std::make_shared<Path<TPos>>();
-    if (found || foundSuitable) {
+    if (found) {
       while (!st.empty()) {
         const TPos &nowPos = st.top().pos;
         path->add(nowPos);

@@ -35,9 +35,10 @@ class FinderBase {
    */
   inline std::tuple<PathResult, std::shared_ptr<Path<TPos>>, U64> findPath(
       const TPos &from, const goal::GoalBase<TPos> &goal,
-      const U64 &timeLimit = 0, const U64 &nodeLimit = 0) const {
-    return static_cast<const TDrived *>(this)->findPathImpl(
-        from, goal, timeLimit, nodeLimit);
+      const U64 &timeLimit = 0, const U64 &nodeLimit = 0) {
+    // clear the hash table of block type
+    blockTypeCache.clear();
+    return static_cast<TDrived *>(this)->findPathImpl(from, goal, timeLimit, nodeLimit);
   }
 
   /*
@@ -53,7 +54,7 @@ class FinderBase {
    * get player current location
    * Return: player current location
    */
-  inline TPos getPlayerLocation() {
+  inline TPos getPlayerLocation() const {
     return static_cast<const TDrived *>(this)->getPlayerLocationImpl();
   }
 
@@ -177,8 +178,14 @@ class FinderBase {
    * Get the block type of the block at a specific position
    */
 
-  inline BlockType getBlockType(const TPos &pos) const {
-    return static_cast<const TDrived *>(this)->getBlockTypeImpl(pos);
+  inline BlockType getBlockType(const TPos &pos) {
+    auto it = blockTypeCache.find(pos);
+    if (it != blockTypeCache.end()) {
+      return it->second;
+    }
+    BlockType type = static_cast<const TDrived *>(this)->getBlockTypeImpl(pos);
+    blockTypeCache.emplace(pos, type);  // cache
+    return type;
   }
 
   /*
@@ -209,7 +216,7 @@ class FinderBase {
    */
   virtual std::tuple<PathResult, std::shared_ptr<Path<TPos>>, U64> findPathImpl(
       const TPos &from, const goal::GoalBase<TPos> &goal, const U64 &timeLimit,
-      const U64 &nodeLimit) const = 0;
+      const U64 &nodeLimit) = 0;
 
   /*
    * This should be implemented in subclass
@@ -255,7 +262,7 @@ class FinderBase {
   }
 
   std::vector<TPos> isAbleToWalkTo(const TPos &from, const TPos &XZoffset,
-                                   const float &fallDamageTol) const {
+                                   const float &fallDamageTol) {
     bool canJump = getBlockType(from + TPos{0, 3, 0}).is(BlockType::AIR);
     const bool isDiagonal = XZoffset.getXZ().abs().sum() > 1;
     const bool isHorizontal = XZoffset.getXZ().abs().sum() > 0;
@@ -373,7 +380,7 @@ class FinderBase {
   }
 
   std::vector<TPos> isAbleToWalkFrom(const TPos &to, const TPos &XZoffset,
-                                     const float &fallDamageTol) const {
+                                     const float &fallDamageTol) {
     const bool isDiagonal = XZoffset.getXZ().abs().sum() > 1;
     const bool isHorizontal = XZoffset.getXZ().abs().sum() > 0;
 
@@ -492,7 +499,7 @@ class FinderBase {
     return possiblePos;
   }
 
-  inline bool isGoalExist(const goal::GoalBase<TPos> &goal) const {
+  inline bool isGoalExist(const goal::GoalBase<TPos> &goal) {
     const TPos &p = goal.getGoalPosition();
     return getBlockType(p).is(BlockType::SAFE) &&
            getBlockType(p.offset(0, 1, 0)).is(BlockType::AIR) &&
@@ -502,6 +509,9 @@ class FinderBase {
  private:
   FinderBase() = default;
   friend TDrived;
+
+  std::unordered_map<TPos, BlockType>
+      blockTypeCache;  // cache the block types for each searching
 };
 
 }  // namespace pathfinding

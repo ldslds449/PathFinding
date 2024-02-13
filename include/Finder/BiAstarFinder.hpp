@@ -26,7 +26,7 @@ class BiAstarFinder
  public:
   virtual std::tuple<PathResult, std::shared_ptr<Path<TPos>>, U64> findPathImpl(
       const TPos &from, const goal::GoalBase<TPos> &goal, const U64 &timeLimit,
-      const U64 &nodeLimit) const override {
+      const U64 &nodeLimit) override {
     // record the information of a node
     struct PosInfo {
       TPos parent;

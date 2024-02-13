@@ -26,7 +26,7 @@ class AstarFinder
  public:
   virtual std::tuple<PathResult, std::shared_ptr<Path<TPos>>, U64> findPathImpl(
       const TPos &from, const goal::GoalBase<TPos> &goal, const U64 &timeLimit,
-      const U64 &nodeLimit) const override {
+      const U64 &nodeLimit) override {
 
     // record the information of a node
     struct PosInfo {
@@ -77,7 +77,7 @@ class AstarFinder
 
     // for loop to find a path to goal
     TPos last;
-    bool found = false, foundSuitable = false;
+    bool found = false;
     bool timeUp = false, nodeSearchExceed = false;
     U64 nodeCount = 0;
     while (heap.size() > 0) {
@@ -89,22 +89,9 @@ class AstarFinder
 
       // check if this node is the goal
       if (goal.isSuitableGoal(now)) {
-        if (now == to) {
-          found = true;
-          last = now;
-          break;
-        } else if (foundSuitable) {
-          if (TEstimateEval::eval(now) < TEstimateEval::eval(last)) {
-            last = now;
-          }
-        } else if (!goalExist) {
-          foundSuitable = true;
-          last = now;
-          break;
-        } else {
-          foundSuitable = true;
-          last = now;
-        }
+        found = true;
+        last = now;
+        break;
       }
 
       // check if time is up
@@ -157,7 +144,7 @@ class AstarFinder
 
     // back tracking to get the whole path
     std::shared_ptr<Path<TPos>> path = std::make_shared<Path<TPos>>();
-    if (found || foundSuitable) {
+    if (found) {
       TPos nowPos = last;
       while (true) {
         path->add(nowPos);

@@ -31,6 +31,10 @@ class BlockType {
 
   BlockType(const Property &_p, const Ability &_a)
       : property(_p), ability(_a) {}
+  BlockType(const BlockType &_bt) {
+    property = _bt.property;
+    ability = _bt.ability;
+  }
   BlockType() = default;
 
   Property property;
