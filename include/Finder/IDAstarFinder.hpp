@@ -85,12 +85,6 @@ class IDAstarFinder
       Node() = default;
     };
 
-    // direction to generate next node
-    struct Direction {
-      TPos offset;
-      CostT cost;
-    };
-
     const TPos &to = goal.getGoalPosition();
     const bool goalExist = BASE::isGoalExist(goal);
 
@@ -104,14 +98,7 @@ class IDAstarFinder
     std::unordered_set<TPos> stackList;
 
     // directions for selecting neighbours
-    std::vector<Direction> directions;
-    for (int x = -1; x <= 1; ++x) {
-      for (int z = -1; z <= 1; ++z) {
-        TPos offset{x, 0, z};
-        if (!config.moveDiagonally && offset.abs().getXZ().sum() > 1) continue;
-        directions.push_back({offset, TEdgeEval::eval(offset)});
-      }
-    }
+    std::vector<Direction<CostT>> directions = getDirections<CostT, TEdgeEval>(config.moveDiagonally);
     const CostT fallCost = TEdgeEval::eval(TPos{0, 1, 0});
     const CostT climbCost = TEdgeEval::eval(TPos{0, 1, 0});
 
@@ -159,7 +146,7 @@ class IDAstarFinder
           BASE::getBlockType(now.pos + TPos{0, 3, 0}).is(BlockType::AIR);
 
       // get next neighbour
-      const Direction &dir = directions[now.dirIdx];
+      const Direction<CostT> &dir = directions[now.dirIdx];
 
       std::vector<TPos> newOffsets = BASE::isAbleToWalkTo(
           now.pos, dir.offset, config.fallingDamageTolerance);

@@ -38,7 +38,8 @@ class FinderBase {
       const U64 &timeLimit = 0, const U64 &nodeLimit = 0) {
     // clear the hash table of block type
     blockTypeCache.clear();
-    return static_cast<TDrived *>(this)->findPathImpl(from, goal, timeLimit, nodeLimit);
+    return static_cast<TDrived *>(this)->findPathImpl(from, goal, timeLimit,
+                                                      nodeLimit);
   }
 
   /*
@@ -504,6 +505,27 @@ class FinderBase {
     return getBlockType(p).is(BlockType::SAFE) &&
            getBlockType(p.offset(0, 1, 0)).is(BlockType::AIR) &&
            getBlockType(p.offset(0, 2, 0)).is(BlockType::AIR);
+  }
+
+  // direction to generate next node
+  template <class CostT>
+  struct Direction {
+    TPos offset;
+    CostT cost;
+  };
+
+  template <class CostT, class TEdgeEval>
+  inline std::vector<Direction<CostT>> getDirections(
+      const bool &moveDiagonally) {
+    std::vector<Direction<CostT>> directions;
+    for (int x = -1; x <= 1; ++x) {
+      for (int z = -1; z <= 1; ++z) {
+        TPos offset{x, 0, z};
+        if (!moveDiagonally && offset.abs().getXZ().sum() > 1) continue;
+        directions.push_back({offset, TEdgeEval::eval(offset)});
+      }
+    }
+    return directions;
   }
 
  private:
