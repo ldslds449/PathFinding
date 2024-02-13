@@ -33,25 +33,32 @@ class IDAstarFinder
     U64 nowTimeLimit = timeLimit, nowNodeLimit = nodeLimit;
     while (true) {
       auto start = std::chrono::steady_clock::now();
-      auto r = AstarWithCostLimit(from, goal, nowTimeLimit, nowNodeLimit, costLimit);
+      auto r =
+          AstarWithCostLimit(from, goal, nowTimeLimit, nowNodeLimit, costLimit);
       auto end = std::chrono::steady_clock::now();
-      if (std::get<0>(r) == PathResult::FOUND)
+      if (std::get<0>(r) == PathResult::FOUND) {
         return {PathResult::FOUND, std::get<1>(r), std::get<3>(r)};  // found
-      else if (std::get<0>(r) == PathResult::NOT_FOUND &&
-               std::get<2>(r) == costLimit)
-        return {PathResult::NOT_FOUND, std::get<1>(r),
-                std::get<3>(r)};  // not found
-      else if (std::get<0>(r) == PathResult::TIME_LIMIT_EXCEED)
+      } else if (std::get<0>(r) == PathResult::TIME_LIMIT_EXCEED) {
         return {PathResult::TIME_LIMIT_EXCEED, std::get<1>(r), std::get<3>(r)};
-      else if (std::get<0>(r) == PathResult::NODE_SEARCH_LIMIT_EXCEED)
+      } else if (std::get<0>(r) == PathResult::NODE_SEARCH_LIMIT_EXCEED) {
         return {PathResult::NODE_SEARCH_LIMIT_EXCEED, std::get<1>(r),
                 std::get<3>(r)};
-      costLimit = std::get<2>(r);
-      std::cout << "Path not found, set cost limit to " << costLimit << "\n";
-      nowTimeLimit -=
-          std::chrono::duration_cast<std::chrono::milliseconds>(end - start)
-              .count();
-      nowNodeLimit -= std::get<3>(r);
+      } else if (std::get<0>(r) == PathResult::NOT_FOUND) {
+        if (std::get<2>(r) == costLimit) {
+          return {PathResult::NOT_FOUND, std::get<1>(r),
+                  std::get<3>(r)};  // not found
+        } else {                    // research
+          costLimit = std::get<2>(r);
+          std::cout << "Path not found with limit " << costLimit << "\n";
+          nowTimeLimit -=
+              std::chrono::duration_cast<std::chrono::milliseconds>(end - start)
+                  .count();
+          nowNodeLimit -= std::get<3>(r);
+        }
+      } else {
+        std::cerr << "Error Search Result\n";
+        exit(EXIT_FAILURE);
+      }
     }
   }
 
@@ -155,29 +162,27 @@ class IDAstarFinder
       // get next neighbour
       const Direction &dir = directions[now.dirIdx];
 
-      std::vector<TPos> newOffsets = BASE::isAbleToWalkTo(now.pos, dir.offset,
-                                             config.fallingDamageTolerance);
+      std::vector<TPos> newOffsets = BASE::isAbleToWalkTo(
+          now.pos, dir.offset, config.fallingDamageTolerance);
       for (TPos &newOffset : newOffsets) {
-        if (newOffset.abs().sum() > 0) {
-          const TPos newPos = now.pos + newOffset;
-          CostT addGCost = dir.cost;
-          if (newOffset.y > 0)
-            addGCost += climbCost * (newOffset.y);
-          else if (newOffset.y < 0)
-            addGCost += fallCost * (-newOffset.y);
+        const TPos newPos = now.pos + newOffset;
+        CostT addGCost = dir.cost;
+        if (newOffset.y > 0)
+          addGCost += climbCost * (newOffset.y);
+        else if (newOffset.y < 0)
+          addGCost += fallCost * (-newOffset.y);
 
-          CostT newGCost = now.gcost + addGCost;
-          CostT newFCost =
-              TWeighted::combine(newGCost, TEstimateEval::eval(newPos, to));
+        CostT newGCost = now.gcost + addGCost;
+        CostT newFCost =
+            TWeighted::combine(newGCost, TEstimateEval::eval(newPos, to));
 
-          // whether the child is in the pv
-          if (stackList.count(newPos) == 0) {
-            if (newFCost <= costLimit) {
-              st.emplace(newPos, newGCost, 0);
-              stackList.insert(newPos);
-            } else {
-              minExceedCost = std::min(minExceedCost, newFCost);
-            }
+        // whether the child is in the pv
+        if (stackList.count(newPos) == 0) {
+          if (newFCost <= costLimit) {
+            st.emplace(newPos, newGCost, 0);
+            stackList.insert(newPos);
+          } else {
+            minExceedCost = std::min(minExceedCost, newFCost);
           }
         }
       }
