@@ -11,7 +11,7 @@ class Diagonal final : public EvaluateBase<Diagonal> {
  public:
   template <class TPos>
   static CostT evalImpl(const TPos &pos, const TPos &target) {
-    return pos.diagonalDist(target);
+    return static_cast<CostT>(pos.diagonalDist(target));
   };
 
   Diagonal() = delete;
