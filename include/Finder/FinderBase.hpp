@@ -35,10 +35,9 @@ class FinderBase {
    */
   inline std::tuple<PathResult, std::shared_ptr<Path<TPos>>, U64> findPath(
       const TPos &from, const goal::GoalBase<TPos> &goal,
-      const U64 &timeLimit = 0, const U64 &nodeLimit = 0,
-      const U64 &extraTimeLimit = 100) const {
+      const U64 &timeLimit = 0, const U64 &nodeLimit = 0) const {
     return static_cast<const TDrived *>(this)->findPathImpl(
-        from, goal, timeLimit, nodeLimit, extraTimeLimit);
+        from, goal, timeLimit, nodeLimit);
   }
 
   /*
@@ -65,7 +64,6 @@ class FinderBase {
    */
   inline bool findPathAndGo(const TPos &from, const goal::GoalBase<TPos> &goal,
                             const U64 &timeLimit = 0, const U64 &nodeLimit = 0,
-                            const U64 &extraTimeLimit = 100,
                             const int &retry = 20) {
     auto run = [&](const TPos &nowFrom, const goal::GoalBase<TPos> &nowGoal)
         -> std::tuple<bool, bool,
@@ -74,7 +72,7 @@ class FinderBase {
                 << ", To: " << goal.getGoalPosition() << ")\n"
                 << std::flush;
       auto t1 = std::chrono::steady_clock::now();
-      auto r = findPath(nowFrom, nowGoal, timeLimit, nodeLimit, extraTimeLimit);
+      auto r = findPath(nowFrom, nowGoal, timeLimit, nodeLimit);
       auto t2 = std::chrono::steady_clock::now();
       auto &path = std::get<1>(r);
       auto &nodeSearch = std::get<2>(r);
@@ -211,7 +209,7 @@ class FinderBase {
    */
   virtual std::tuple<PathResult, std::shared_ptr<Path<TPos>>, U64> findPathImpl(
       const TPos &from, const goal::GoalBase<TPos> &goal, const U64 &timeLimit,
-      const U64 &nodeLimit, const U64 &extraTimeLimit) const = 0;
+      const U64 &nodeLimit) const = 0;
 
   /*
    * This should be implemented in subclass

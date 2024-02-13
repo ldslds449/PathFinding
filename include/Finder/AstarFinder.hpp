@@ -26,7 +26,7 @@ class AstarFinder
  public:
   virtual std::tuple<PathResult, std::shared_ptr<Path<TPos>>, U64> findPathImpl(
       const TPos &from, const goal::GoalBase<TPos> &goal, const U64 &timeLimit,
-      const U64 &nodeLimit, const U64 &extraTimeLimit) const override {
+      const U64 &nodeLimit) const override {
 
     // record the information of a node
     struct PosInfo {
@@ -45,7 +45,6 @@ class AstarFinder
 
     // time limit
     auto startTime = std::chrono::steady_clock::now();
-    decltype(startTime) extraStartTime;
 
     // compare function for priority queue, sort Node
     auto heap_cmp = [](const std::pair<CostT, CostT> &a, const std::pair<CostT, CostT> &b) {
@@ -103,7 +102,6 @@ class AstarFinder
           last = now;
           break;
         } else {
-          extraStartTime = std::chrono::steady_clock::now();
           foundSuitable = true;
           last = now;
         }
@@ -112,10 +110,6 @@ class AstarFinder
       // check if time is up
       if (BASE::isTimeUp(startTime, timeLimit)) {
         timeUp = true;
-        break;
-      }
-
-      if (foundSuitable && BASE::isTimeUp(extraStartTime, extraTimeLimit)) {
         break;
       }
 

@@ -40,11 +40,13 @@ class IDAstarFinder
         return {PathResult::FOUND, std::get<1>(r), std::get<3>(r)};  // found
       else if (std::get<0>(r) == PathResult::NOT_FOUND &&
                std::get<2>(r) == costLimit)
-        return {PathResult::NOT_FOUND, std::get<1>(r), std::get<3>(r)};  // not found
+        return {PathResult::NOT_FOUND, std::get<1>(r),
+                std::get<3>(r)};  // not found
       else if (std::get<0>(r) == PathResult::TIME_LIMIT_EXCEED)
         return {PathResult::TIME_LIMIT_EXCEED, std::get<1>(r), std::get<3>(r)};
       else if (std::get<0>(r) == PathResult::NODE_SEARCH_LIMIT_EXCEED)
-        return {PathResult::NODE_SEARCH_LIMIT_EXCEED, std::get<1>(r), std::get<3>(r)};
+        return {PathResult::NODE_SEARCH_LIMIT_EXCEED, std::get<1>(r),
+                std::get<3>(r)};
       costLimit = std::get<2>(r);
       std::cout << "Path not found, set cost limit to " << costLimit << "\n";
       nowTimeLimit -=
@@ -68,7 +70,7 @@ class IDAstarFinder
   std::tuple<PathResult, std::shared_ptr<Path<TPos>>, CostT, U64>
   AstarWithCostLimit(const TPos &from, const goal::GoalBase<TPos> &goal,
                      const U64 &timeLimit, const U64 &nodeLimit,
-                     const U64 &extraTimeLimit, const CostT &costLimit) const {
+                     const CostT &costLimit) const {
     struct Node {
       TPos pos;
       CostT gcost;
@@ -92,7 +94,6 @@ class IDAstarFinder
 
     // time limit
     auto startTime = std::chrono::steady_clock::now();
-    decltype(startTime) extraStartTime;
 
     // stack table
     std::unordered_set<TPos> stackList;
@@ -139,15 +140,11 @@ class IDAstarFinder
         } else {
           foundSuitable = true;
           last = now;
-          extraStartTime = std::chrono::steady_clock::now();
         }
       }
 
       if (BASE::isTimeUp(startTime, timeLimit)) {
         timeUp = true;
-        break;
-      }
-      if (foundSuitable && BASE::isTimeUp(extraStartTime, extraTimeLimit)) {
         break;
       }
 
