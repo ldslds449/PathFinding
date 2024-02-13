@@ -14,16 +14,17 @@
 
 namespace pathfinding {
 
-template <class TDrived, class TWeighted = weight::ConstWeighted<>,
+template <class TDrived, class TPos = Position,
+          class TEdgeEval = eval::Manhattan,
           class TEstimateEval = eval::Manhattan,
-          class TEdgeEval = eval::Euclidean, class TPos = Position>
+          class TWeighted = weight::ConstWeighted<>>
 class IDAstarFinder
     : public FinderBase<
-          IDAstarFinder<TDrived, TWeighted, TEstimateEval, TEdgeEval, TPos>,
+          IDAstarFinder<TDrived, TPos, TEdgeEval, TEstimateEval, TWeighted>,
           TPos> {
  private:
   using BASE = FinderBase<
-      IDAstarFinder<TDrived, TWeighted, TEstimateEval, TEdgeEval, TPos>, TPos>;
+      IDAstarFinder<TDrived, TPos, TEdgeEval, TEstimateEval, TWeighted>, TPos>;
 
  public:
   virtual std::tuple<PathResult, std::shared_ptr<Path<TPos>>, U64> findPathImpl(
@@ -33,8 +34,7 @@ class IDAstarFinder
     U64 nowTimeLimit = timeLimit, nowNodeLimit = nodeLimit;
     while (true) {
       auto start = std::chrono::steady_clock::now();
-      auto r =
-          AstarWithCostLimit(from, goal, nowTimeLimit, nowNodeLimit, costLimit);
+      auto r = LimitedAstar(from, goal, nowTimeLimit, nowNodeLimit, costLimit);
       auto end = std::chrono::steady_clock::now();
       if (std::get<0>(r) == PathResult::FOUND) {
         return {PathResult::FOUND, std::get<1>(r), std::get<3>(r)};  // found
@@ -73,10 +73,9 @@ class IDAstarFinder
  protected:
   finderConfig config;
 
-  std::tuple<PathResult, std::shared_ptr<Path<TPos>>, CostT, U64>
-  AstarWithCostLimit(const TPos &from, const goal::GoalBase<TPos> &goal,
-                     const U64 &timeLimit, const U64 &nodeLimit,
-                     const CostT &costLimit) {
+  std::tuple<PathResult, std::shared_ptr<Path<TPos>>, CostT, U64> LimitedAstar(
+      const TPos &from, const goal::GoalBase<TPos> &goal, const U64 &timeLimit,
+      const U64 &nodeLimit, const CostT &costLimit) {
     struct Node {
       TPos pos;
       CostT gcost;

@@ -12,16 +12,17 @@
 
 namespace pathfinding {
 
-template <class TDrived, class TWeighted = weight::ConstWeighted<>,
+template <class TDrived, class TPos = Position,
+          class TEdgeEval = eval::Manhattan,
           class TEstimateEval = eval::Manhattan,
-          class TEdgeEval = eval::Euclidean, class TPos = Position>
+          class TWeighted = weight::ConstWeighted<>>
 class AstarFinder
     : public FinderBase<
-          AstarFinder<TDrived, TWeighted, TEstimateEval, TEdgeEval, TPos>,
+          AstarFinder<TDrived, TPos, TEdgeEval, TEstimateEval, TWeighted>,
           TPos> {
  private:
   using BASE = FinderBase<
-      AstarFinder<TDrived, TWeighted, TEstimateEval, TEdgeEval, TPos>, TPos>;
+      AstarFinder<TDrived, TPos, TEdgeEval, TEstimateEval, TWeighted>, TPos>;
 
  public:
   virtual std::tuple<PathResult, std::shared_ptr<Path<TPos>>, U64> findPathImpl(
