@@ -6,5 +6,7 @@
 #include "IDAstarFinder.hpp"
 #include "ILSFinder.hpp"
 #include "UCSFinder.hpp"
+#include "BestFirstFinder.hpp"
+#include "IDBestFirstFinder.hpp"
 
 #endif  // PATHFINDING_FINDER_FINDER_H_
