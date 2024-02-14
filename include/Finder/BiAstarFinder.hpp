@@ -204,16 +204,8 @@ class BiAstarFinder
     }
   }
 
-  struct finderConfig {
-    bool moveDiagonally = true;
-    float fallingDamageTolerance = 0.0;
-  };
-
   BiAstarFinder() = default;
-  BiAstarFinder(const finderConfig &_config) : config(_config) {}
-
- protected:
-  finderConfig config;
+  BiAstarFinder(const FinderConfig &_config) : BASE(_config) {}
 };
 
 }  // namespace pathfinding

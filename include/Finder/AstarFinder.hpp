@@ -28,7 +28,6 @@ class AstarFinder
   virtual std::tuple<PathResult, std::shared_ptr<Path<TPos>>, U64> findPathImpl(
       const TPos &from, const goal::GoalBase<TPos> &goal, const U64 &timeLimit,
       const U64 &nodeLimit) override {
-
     // record the information of a node
     struct PosInfo {
       TPos parent;
@@ -42,7 +41,8 @@ class AstarFinder
     auto startTime = std::chrono::steady_clock::now();
 
     // compare function for priority queue, sort Node
-    auto heap_cmp = [](const std::pair<CostT, CostT> &a, const std::pair<CostT, CostT> &b) {
+    auto heap_cmp = [](const std::pair<CostT, CostT> &a,
+                       const std::pair<CostT, CostT> &b) {
       // from lowest cost to largest cost
       return TWeighted::combine(a.first, a.second) <
              TWeighted::combine(b.first, b.second);
@@ -54,7 +54,8 @@ class AstarFinder
     std::unordered_map<TPos, PosInfo> infoTable;
 
     // directions for selecting neighbours
-    std::vector<Direction<CostT>> directions = getDirections<CostT, TEdgeEval>(config.moveDiagonally);
+    std::vector<Direction<CostT>> directions =
+        getDirections<CostT, TEdgeEval>(config.moveDiagonally);
     const CostT fallCost = TEdgeEval::eval(TPos{0, 1, 0});
     const CostT climbCost = TEdgeEval::eval(TPos{0, 1, 0});
 
@@ -113,7 +114,7 @@ class AstarFinder
 
           auto found_it = infoTable.find(newPos);
           if (found_it != infoTable.end()) {
-            if(!found_it->second.closed){
+            if (!found_it->second.closed) {
               auto PreCost = heap.lookup(newPos);
               // compare the gCost and reserve the one with lower cost
               if (newGCost < PreCost.first) {
@@ -151,16 +152,8 @@ class AstarFinder
     }
   }
 
-  struct finderConfig {
-    bool moveDiagonally = true;
-    float fallingDamageTolerance = 0.0;
-  };
-
   AstarFinder() = default;
-  AstarFinder(const finderConfig &_config) : config(_config) {}
-
- protected:
-  finderConfig config;
+  AstarFinder(const FinderConfig &_config) : BASE(_config) {}
 };
 
 }  // namespace pathfinding

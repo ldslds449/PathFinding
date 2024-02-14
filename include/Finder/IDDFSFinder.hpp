@@ -18,7 +18,8 @@ template <class TDrived, class TPos = Position,
 class IDDFSFinder
     : public FinderBase<IDDFSFinder<TDrived, TPos, TEdgeEval, Dummy...>, TPos> {
  private:
-  using BASE = FinderBase<IDDFSFinder<TDrived, TPos, TEdgeEval, Dummy...>, TPos>;
+  using BASE =
+      FinderBase<IDDFSFinder<TDrived, TPos, TEdgeEval, Dummy...>, TPos>;
 
  public:
   virtual std::tuple<PathResult, std::shared_ptr<Path<TPos>>, U64> findPathImpl(
@@ -56,17 +57,10 @@ class IDDFSFinder
     }
   }
 
-  struct finderConfig {
-    bool moveDiagonally = true;
-    float fallingDamageTolerance = 0.0;
-  };
-
   IDDFSFinder() = default;
-  IDDFSFinder(const finderConfig &_config) : config(_config) {}
+  IDDFSFinder(const FinderConfig &_config) : BASE(_config) {}
 
  protected:
-  finderConfig config;
-
   std::tuple<PathResult, std::shared_ptr<Path<TPos>>, CostT, U64> DLS(
       const TPos &from, const goal::GoalBase<TPos> &goal, const U64 &timeLimit,
       const U64 &nodeLimit, const CostT &costLimit) {
@@ -92,7 +86,8 @@ class IDDFSFinder
     std::unordered_set<TPos> stackList;
 
     // directions for selecting neighbours
-    std::vector<Direction<CostT>> directions = getDirections<CostT, TEdgeEval>(config.moveDiagonally);
+    std::vector<Direction<CostT>> directions =
+        getDirections<CostT, TEdgeEval>(config.moveDiagonally);
     const CostT fallCost = TEdgeEval::eval(TPos{0, 1, 0});
     const CostT climbCost = TEdgeEval::eval(TPos{0, 1, 0});
 

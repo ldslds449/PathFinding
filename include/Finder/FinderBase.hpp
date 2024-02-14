@@ -27,8 +27,27 @@ enum PathResult {
   NODE_SEARCH_LIMIT_EXCEED
 };
 
+class FinderConfig {
+ public:
+  bool moveDiagonally = true;
+  float fallingDamageTolerance = 0.0;
+};
+
 template <class TDrived, class TPos>
 class FinderBase {
+ protected:
+  std::unordered_map<TPos, BlockType>
+      blockTypeCache;  // cache the block types for each searching
+  FinderConfig config;
+
+  // direction to generate next node
+  template <class CostT>
+  class Direction {
+   public:
+    TPos offset;
+    CostT cost;
+  };
+
  public:
   /*
    * Find a path to the goal
@@ -509,13 +528,6 @@ class FinderBase {
            getBlockType(p.offset(0, 2, 0)).is(BlockType::AIR);
   }
 
-  // direction to generate next node
-  template <class CostT>
-  struct Direction {
-    TPos offset;
-    CostT cost;
-  };
-
   template <class CostT, class TEdgeEval>
   inline std::vector<Direction<CostT>> getDirections(
       const bool &moveDiagonally) {
@@ -532,10 +544,10 @@ class FinderBase {
 
  private:
   FinderBase() = default;
-  friend TDrived;
+  FinderBase(const FinderConfig &_config) : config(config) {}
 
-  std::unordered_map<TPos, BlockType>
-      blockTypeCache;  // cache the block types for each searching
+ private:
+  friend TDrived;
 };
 
 }  // namespace pathfinding

@@ -62,17 +62,10 @@ class IDAstarFinder
     }
   }
 
-  struct finderConfig {
-    bool moveDiagonally = true;
-    float fallingDamageTolerance = 0.0;
-  };
-
   IDAstarFinder() = default;
-  IDAstarFinder(const finderConfig &_config) : config(_config) {}
+  IDAstarFinder(const FinderConfig &_config) : BASE(_config) {}
 
  protected:
-  finderConfig config;
-
   std::tuple<PathResult, std::shared_ptr<Path<TPos>>, CostT, U64> LimitedAstar(
       const TPos &from, const goal::GoalBase<TPos> &goal, const U64 &timeLimit,
       const U64 &nodeLimit, const CostT &costLimit) {
@@ -98,7 +91,8 @@ class IDAstarFinder
     std::unordered_set<TPos> stackList;
 
     // directions for selecting neighbours
-    std::vector<Direction<CostT>> directions = getDirections<CostT, TEdgeEval>(config.moveDiagonally);
+    std::vector<Direction<CostT>> directions =
+        getDirections<CostT, TEdgeEval>(config.moveDiagonally);
     const CostT fallCost = TEdgeEval::eval(TPos{0, 1, 0});
     const CostT climbCost = TEdgeEval::eval(TPos{0, 1, 0});
 
