@@ -7,7 +7,7 @@ namespace pathfinding {
 
 namespace eval {
 
-template <int Val>
+template <int Val = 0>
 class ConstEval final : public EvaluateBase<ConstEval<Val>> {
  public:
   template <class TPos>

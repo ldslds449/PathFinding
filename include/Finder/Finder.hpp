@@ -4,6 +4,7 @@
 #include "AstarFinder.hpp"
 #include "BiAstarFinder.hpp"
 #include "IDAstarFinder.hpp"
-#include "IDDFSFinder.hpp"
+#include "IDUCSFinder.hpp"
+#include "UCSFinder.hpp"
 
 #endif  // PATHFINDING_FINDER_FINDER_H_
