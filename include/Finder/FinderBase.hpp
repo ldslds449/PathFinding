@@ -138,9 +138,11 @@ class FinderBase {
         const auto vecUnit = static_cast<const Vec3<double>>(vecXZ) /
                              std::sqrt(vecXZ.squaredNorm());
 
-        nowGoalPos.x = lastPos.x + std::floor(vecUnit.x * step);
+        nowGoalPos.x = lastPos.x + static_cast<typename TPos::value_type>(
+                                       std::floor(vecUnit.x * step));
         nowGoalPos.y = lastPos.y;
-        nowGoalPos.z = lastPos.z + std::floor(vecUnit.z * step);
+        nowGoalPos.z = lastPos.z + static_cast<typename TPos::value_type>(
+                                       std::floor(vecUnit.z * step));
 
         std::cout << "Position " << goalPos
                   << (goal_is_in_unload_chunk ? " is in an unload chunk" : "")
