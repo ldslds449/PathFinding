@@ -44,8 +44,10 @@ class AstarFinder
     auto heap_cmp = [](const std::pair<CostT, CostT> &a,
                        const std::pair<CostT, CostT> &b) {
       // from lowest cost to largest cost
-      return TWeighted::combine(a.first, a.second) <
-             TWeighted::combine(b.first, b.second);
+      // if there is a tie in f(x), comparing h(x) instead.
+      const CostT costA = TWeighted::combine(a.first, a.second);
+      const CostT costB = TWeighted::combine(b.first, b.second);
+      return (costA != costB ? (costA < costB) : (a.second < b.second));
     };
     TableHeap<TPos, std::pair<CostT, CostT>, decltype(heap_cmp)> heap(heap_cmp);
 
