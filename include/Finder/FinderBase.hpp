@@ -544,7 +544,7 @@ class FinderBase {
 
  private:
   FinderBase() = default;
-  FinderBase(const FinderConfig &_config) : config(config) {}
+  FinderBase(const FinderConfig &_config) : config(_config) {}
 
  private:
   friend TDrived;
