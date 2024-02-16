@@ -92,7 +92,7 @@ class IDAstarFinder
 
     // directions for selecting neighbours
     std::vector<Direction<CostT>> directions =
-        getDirections<CostT, TEdgeEval>(config.moveDiagonally);
+        getDirections<CostT, TEdgeEval>();
     const CostT fallCost = TEdgeEval::eval(TPos{0, 1, 0});
     const CostT climbCost = TEdgeEval::eval(TPos{0, 1, 0});
 
@@ -142,8 +142,7 @@ class IDAstarFinder
       // get next neighbour
       const Direction<CostT> &dir = directions[now.dirIdx];
 
-      std::vector<TPos> newOffsets = BASE::isAbleToWalkTo(
-          now.pos, dir.offset, config.fallingDamageTolerance);
+      std::vector<TPos> newOffsets = BASE::isAbleToWalkTo(now.pos, dir.offset);
       for (TPos &newOffset : newOffsets) {
         const TPos newPos = now.pos + newOffset;
         CostT addGCost = dir.cost;

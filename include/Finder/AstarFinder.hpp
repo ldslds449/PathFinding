@@ -57,7 +57,7 @@ class AstarFinder
 
     // directions for selecting neighbours
     std::vector<Direction<CostT>> directions =
-        getDirections<CostT, TEdgeEval>(config.moveDiagonally);
+        getDirections<CostT, TEdgeEval>();
     const CostT fallCost = TEdgeEval::eval(TPos{0, 1, 0});
     const CostT climbCost = TEdgeEval::eval(TPos{0, 1, 0});
 
@@ -100,8 +100,7 @@ class AstarFinder
 
       // find neighbour
       for (const Direction<CostT> &dir : directions) {
-        std::vector<TPos> newOffsets = BASE::isAbleToWalkTo(
-            now, dir.offset, config.fallingDamageTolerance);
+        std::vector<TPos> newOffsets = BASE::isAbleToWalkTo(now, dir.offset);
         for (TPos &newOffset : newOffsets) {
           CostT addGCost = dir.cost;
           if (newOffset.y > 0)

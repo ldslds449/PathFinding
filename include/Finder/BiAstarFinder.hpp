@@ -72,7 +72,8 @@ class BiAstarFinder
     auto startTime = std::chrono::steady_clock::now();
 
     // directions for selecting neighbours
-    std::vector<Direction<CostT>> directions = getDirections<CostT, TEdgeEval>(config.moveDiagonally);
+    std::vector<Direction<CostT>> directions =
+        getDirections<CostT, TEdgeEval>();
     const CostT fallCost = TEdgeEval::eval(TPos{0, 1, 0});
     const CostT climbCost = TEdgeEval::eval(TPos{0, 1, 0});
 
@@ -126,8 +127,7 @@ class BiAstarFinder
 
       // find neighbour
       for (const Direction<CostT> &dir : directions) {
-        std::vector<TPos> newOffsets =
-            select.walkable(now, dir.offset, config.fallingDamageTolerance);
+        std::vector<TPos> newOffsets = select.walkable(now, dir.offset);
 
         for (TPos &newOffset : newOffsets) {
           CostT addGCost = dir.cost;

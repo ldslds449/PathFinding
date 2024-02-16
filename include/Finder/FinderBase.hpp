@@ -284,8 +284,7 @@ class FinderBase {
                    .count()) >= timeLimit;
   }
 
-  std::vector<TPos> isAbleToWalkTo(const TPos &from, const TPos &XZoffset,
-                                   const float &fallDamageTol) {
+  std::vector<TPos> isAbleToWalkTo(const TPos &from, const TPos &XZoffset) {
     bool canJump = getBlockType(from + TPos{0, 3, 0}).is(BlockType::AIR);
     const bool isDiagonal = XZoffset.getXZ().abs().sum() > 1;
     const bool isHorizontal = XZoffset.getXZ().abs().sum() > 0;
@@ -374,7 +373,7 @@ class FinderBase {
                landingPos.y > getMinY());
       if (landingType.is(BlockType::SAFE) &&
           getFallDamage(landingPos, (blocksPos[COORD::FLOOR] - landingPos).y) <=
-              fallDamageTol) {
+              config.fallingDamageTolerance) {
         possiblePos.emplace_back(landingPos - from);
       }
     }
@@ -402,8 +401,7 @@ class FinderBase {
     return possiblePos;
   }
 
-  std::vector<TPos> isAbleToWalkFrom(const TPos &to, const TPos &XZoffset,
-                                     const float &fallDamageTol) {
+  std::vector<TPos> isAbleToWalkFrom(const TPos &to, const TPos &XZoffset) {
     const bool isDiagonal = XZoffset.getXZ().abs().sum() > 1;
     const bool isHorizontal = XZoffset.getXZ().abs().sum() > 0;
 
@@ -482,7 +480,7 @@ class FinderBase {
         BlockType upType = getBlockType(upPos);
         if (upType.isNot(BlockType::AIR)) break;
         if (getFallDamage(to, upPos.y - blocksPos[COORD::ORIG].y) <=
-            fallDamageTol) {
+            config.fallingDamageTolerance) {
           TPos platformPos = upPos + XZoffset,
                platformPos_up1 = platformPos + TPos{0, 1, 0},
                platformPos_up2 = platformPos + TPos{0, 2, 0},
@@ -530,13 +528,12 @@ class FinderBase {
   }
 
   template <class CostT, class TEdgeEval>
-  inline std::vector<Direction<CostT>> getDirections(
-      const bool &moveDiagonally) {
+  inline std::vector<Direction<CostT>> getDirections() {
     std::vector<Direction<CostT>> directions;
     for (int x = -1; x <= 1; ++x) {
       for (int z = -1; z <= 1; ++z) {
         TPos offset{x, 0, z};
-        if (!moveDiagonally && offset.abs().getXZ().sum() > 1) continue;
+        if (!config.moveDiagonally && offset.abs().getXZ().sum() > 1) continue;
         directions.push_back({offset, TEdgeEval::eval(offset)});
       }
     }
