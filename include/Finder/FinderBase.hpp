@@ -31,6 +31,7 @@ class FinderConfig {
  public:
   bool moveDiagonally = true;
   float fallingDamageTolerance = 0.0;
+  bool enableFalling = true;
 };
 
 template <class TDrived, class TPos>
@@ -353,7 +354,7 @@ class FinderBase {
     }
 
     // fall
-    if (isHorizontal &&
+    if (config.enableFalling && isHorizontal &&
         (blockTypes[COORD::FLOOR].is(BlockType::AIR) ||
          blockTypes[COORD::FLOOR].is(BlockType::FORCE_DOWN)) &&
         blockTypes[COORD::FLOOR_UP1].canPass() &&
@@ -471,7 +472,7 @@ class FinderBase {
     }
 
     // fall
-    if (isHorizontal &&
+    if (config.enableFalling && isHorizontal &&
         (blockTypes[COORD::ORIG_UP3].is(BlockType::AIR) ||
          blockTypes[COORD::ORIG_UP3].is(BlockType::FORCE_DOWN))) {
       TPos upPos = blocksPos[COORD::ORIG];
