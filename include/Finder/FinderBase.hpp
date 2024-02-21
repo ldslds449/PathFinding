@@ -257,11 +257,16 @@ class FinderBase {
   virtual BlockType getBlockTypeImpl(const TPos &pos) const = 0;
 
   /*
-   * This should be implemented in subclass
+   * This may be override in subclass
    */
   virtual float getFallDamageImpl(
-      const TPos &landingPos,
-      const typename TPos::value_type &height) const = 0;
+      const TPos &landingPos, const typename TPos::value_type &height) const {
+    // do not apply any damage reduction
+    // you can override this function to calculate a more precise damage value.
+    if (height < 3.375) return 0.0;
+    float damage = std::floor(height - 3.375) + 1;
+    return damage;
+  };
 
   /*
    * This may be override in subclass
