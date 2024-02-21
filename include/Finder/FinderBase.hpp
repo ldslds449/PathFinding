@@ -264,14 +264,14 @@ class FinderBase {
       const typename TPos::value_type &height) const = 0;
 
   /*
-   * This should be implemented in subclass
+   * This may be override in subclass
    */
-  virtual int getMinYImpl() const = 0;
+  virtual int getMinYImpl() const { return -64; };
 
   /*
-   * This should be implemented in subclass
+   * This may be override in subclass
    */
-  virtual int getMaxYImpl() const = 0;
+  virtual int getMaxYImpl() const { return 320; };
 
  protected:
   inline bool isTimeUp(const std::chrono::steady_clock::time_point &start,
