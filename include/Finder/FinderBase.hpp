@@ -30,6 +30,7 @@ enum PathResult {
 class FinderConfig {
  public:
   bool moveDiagonally = true;
+  bool jumpOverBlock = false;
   float fallingDamageTolerance = 0.0;
   bool enableFalling = true;
 };
@@ -42,11 +43,12 @@ class FinderBase {
   FinderConfig config;
 
   // direction to generate next node
-  template <class CostT>
   class Direction {
    public:
     TPos offset;
     CostT cost;
+    Direction(const TPos &_offset, const CostT &_c)
+        : offset(_offset), cost(_c) {}
   };
 
  public:
@@ -292,7 +294,9 @@ class FinderBase {
   std::vector<TPos> isAbleToWalkTo(const TPos &from, const TPos &XZoffset) {
     bool canJump = getBlockType(from + TPos{0, 3, 0}).is(BlockType::AIR);
     const bool isDiagonal = XZoffset.getXZ().abs().sum() > 1;
-    const bool isHorizontal = XZoffset.getXZ().abs().sum() > 0;
+    const bool isHorizontal_1 = XZoffset.getXZ().abs().sum() == 1;
+    const bool isHorizontal_2 = XZoffset.getXZ().abs().sum() == 2;
+    const bool noHorizontal = !(isHorizontal_1 || isHorizontal_2);
 
     // check positions
     const std::vector<TPos> blocksPos = {
@@ -333,7 +337,7 @@ class FinderBase {
     std::vector<TPos> possiblePos;
 
     // walk
-    if (isHorizontal && blockTypes[COORD::FLOOR_UP1].is(BlockType::AIR) &&
+    if (isHorizontal_1 && blockTypes[COORD::FLOOR_UP1].is(BlockType::AIR) &&
         blockTypes[COORD::FLOOR_UP2].is(BlockType::AIR) &&
         blockTypes[COORD::FLOOR].is(BlockType::SAFE)) {
       if (!isDiagonal || (blockTypes[COORD::X_UP1].canPass() &&
@@ -345,7 +349,7 @@ class FinderBase {
     }
 
     // walk + jump
-    if (isHorizontal && canJump && blockTypes[COORD::FLOOR_UP2].canPass() &&
+    if (isHorizontal_1 && canJump && blockTypes[COORD::FLOOR_UP2].canPass() &&
         blockTypes[COORD::FLOOR_UP3].canPass() &&
         blockTypes[COORD::FLOOR_UP1].is(BlockType::SAFE) &&
         blockTypes[COORD::ORIG_UP1].is(BlockType::AIR)) {
@@ -357,8 +361,24 @@ class FinderBase {
       }
     }
 
+    // jump over a block
+    if (isHorizontal_2 && canJump &&
+        blockTypes[COORD::FLOOR].is(BlockType::SAFE) &&
+        blockTypes[COORD::FLOOR_UP1].is(BlockType::AIR) &&
+        blockTypes[COORD::FLOOR_UP2].is(BlockType::AIR) &&
+        blockTypes[COORD::FLOOR_UP3].is(BlockType::AIR) &&
+        getBlockType(from + (XZoffset / 2)).is(BlockType::AIR) &&
+        getBlockType(from + (XZoffset / 2) + TPos{0, 1, 0})
+            .is(BlockType::AIR) &&
+        getBlockType(from + (XZoffset / 2) + TPos{0, 2, 0})
+            .is(BlockType::AIR) &&
+        getBlockType(from + (XZoffset / 2) + TPos{0, 3, 0})
+            .is(BlockType::AIR)) {
+      possiblePos.emplace_back(XZoffset);
+    }
+
     // fall
-    if (config.enableFalling && isHorizontal &&
+    if (config.enableFalling && isHorizontal_1 &&
         (blockTypes[COORD::FLOOR].is(BlockType::AIR) ||
          blockTypes[COORD::FLOOR].is(BlockType::FORCE_DOWN)) &&
         blockTypes[COORD::FLOOR_UP1].canPass() &&
@@ -384,7 +404,7 @@ class FinderBase {
     }
 
     // climb up
-    if (!isHorizontal && blockTypes[COORD::FLOOR].is(BlockType::SAFE) &&
+    if (noHorizontal && blockTypes[COORD::FLOOR].is(BlockType::SAFE) &&
         (blockTypes[COORD::FLOOR_UP1].is(BlockType::CAN_UP) ||
          blockTypes[COORD::FLOOR_UP1].is(BlockType::CAN_UP_DOWN)) &&
         blockTypes[COORD::FLOOR_UP1].canPass() &&
@@ -394,7 +414,7 @@ class FinderBase {
     }
 
     // climb down
-    if (!isHorizontal && blockTypes[COORD::FLOOR_DOWN1].is(BlockType::SAFE) &&
+    if (noHorizontal && blockTypes[COORD::FLOOR_DOWN1].is(BlockType::SAFE) &&
         (blockTypes[COORD::FLOOR].is(BlockType::CAN_DOWN) ||
          blockTypes[COORD::FLOOR].is(BlockType::CAN_UP_DOWN)) &&
         blockTypes[COORD::FLOOR].canPass() &&
@@ -408,7 +428,9 @@ class FinderBase {
 
   std::vector<TPos> isAbleToWalkFrom(const TPos &to, const TPos &XZoffset) {
     const bool isDiagonal = XZoffset.getXZ().abs().sum() > 1;
-    const bool isHorizontal = XZoffset.getXZ().abs().sum() > 0;
+    const bool isHorizontal_1 = XZoffset.getXZ().abs().sum() == 1;
+    const bool isHorizontal_2 = XZoffset.getXZ().abs().sum() == 2;
+    const bool noHorizontal = !(isHorizontal_1 || isHorizontal_2);
 
     // check positions
     const std::vector<TPos> blocksPos = {
@@ -446,11 +468,11 @@ class FinderBase {
     for (unsigned i = 0; i < blocksPos.size(); ++i) {
       blockTypes[i] = getBlockType(blocksPos[i]);
     }
-    bool canJump = blockTypes[COORD::FLOOR_UP2].is(BlockType::AIR);
+    bool canJump = blockTypes[COORD::FLOOR_UP3].is(BlockType::AIR);
     std::vector<TPos> possiblePos;
 
     // walk
-    if (isHorizontal && blockTypes[COORD::FLOOR_UP1].is(BlockType::AIR) &&
+    if (isHorizontal_1 && blockTypes[COORD::FLOOR_UP1].is(BlockType::AIR) &&
         blockTypes[COORD::FLOOR_UP2].is(BlockType::AIR) &&
         blockTypes[COORD::FLOOR].is(BlockType::SAFE)) {
       if (!isDiagonal || (blockTypes[COORD::X_UP1].canPass() &&
@@ -462,7 +484,7 @@ class FinderBase {
     }
 
     // walk + jump
-    if (isHorizontal && canJump && blockTypes[COORD::FLOOR_UP2].canPass() &&
+    if (isHorizontal_1 && canJump && blockTypes[COORD::FLOOR_UP2].canPass() &&
         blockTypes[COORD::FLOOR_UP1].canPass() &&
         blockTypes[COORD::FLOOR].is(BlockType::AIR) &&
         blockTypes[COORD::FLOOR_DOWN1].is(BlockType::SAFE)) {
@@ -474,8 +496,21 @@ class FinderBase {
       }
     }
 
+    // jump over a block
+    if (isHorizontal_2 && canJump &&
+        blockTypes[COORD::FLOOR].is(BlockType::SAFE) &&
+        blockTypes[COORD::FLOOR_UP1].is(BlockType::AIR) &&
+        blockTypes[COORD::FLOOR_UP2].is(BlockType::AIR) &&
+        blockTypes[COORD::ORIG_UP3].is(BlockType::AIR) &&
+        getBlockType(to + (XZoffset / 2)).is(BlockType::AIR) &&
+        getBlockType(to + (XZoffset / 2) + TPos{0, 1, 0}).is(BlockType::AIR) &&
+        getBlockType(to + (XZoffset / 2) + TPos{0, 2, 0}).is(BlockType::AIR) &&
+        getBlockType(to + (XZoffset / 2) + TPos{0, 3, 0}).is(BlockType::AIR)) {
+      possiblePos.emplace_back(XZoffset);
+    }
+
     // fall
-    if (config.enableFalling && isHorizontal &&
+    if (config.enableFalling && isHorizontal_1 &&
         (blockTypes[COORD::ORIG_UP3].is(BlockType::AIR) ||
          blockTypes[COORD::ORIG_UP3].is(BlockType::FORCE_DOWN))) {
       TPos upPos = blocksPos[COORD::ORIG];
@@ -507,7 +542,7 @@ class FinderBase {
     }
 
     // climb up
-    if (!isHorizontal && blockTypes[COORD::FLOOR_DOWN1].is(BlockType::SAFE) &&
+    if (noHorizontal && blockTypes[COORD::FLOOR_DOWN1].is(BlockType::SAFE) &&
         (blockTypes[COORD::FLOOR].is(BlockType::CAN_UP) ||
          blockTypes[COORD::FLOOR].is(BlockType::CAN_UP_DOWN)) &&
         blockTypes[COORD::FLOOR].canPass()) {
@@ -515,7 +550,7 @@ class FinderBase {
     }
 
     // climb down
-    if (!isHorizontal && blockTypes[COORD::FLOOR_UP3].canPass() &&
+    if (noHorizontal && blockTypes[COORD::FLOOR_UP3].canPass() &&
         (blockTypes[COORD::FLOOR_UP1].is(BlockType::CAN_DOWN) ||
          blockTypes[COORD::FLOOR_UP1].is(BlockType::CAN_UP_DOWN)) &&
         blockTypes[COORD::FLOOR_UP1].canPass()) {
@@ -532,16 +567,31 @@ class FinderBase {
            getBlockType(p.offset(0, 2, 0)).is(BlockType::AIR);
   }
 
-  template <class CostT, class TEdgeEval>
-  inline std::vector<Direction<CostT>> getDirections() {
-    std::vector<Direction<CostT>> directions;
+  template <class TEdgeEval>
+  inline std::vector<Direction> getDirections() {
+    std::vector<Direction> directions;
+
+    // 4/8 directions
     for (int x = -1; x <= 1; ++x) {
       for (int z = -1; z <= 1; ++z) {
         TPos offset{x, 0, z};
         if (!config.moveDiagonally && offset.abs().getXZ().sum() > 1) continue;
-        directions.push_back({offset, TEdgeEval::eval(offset)});
+        directions.emplace_back(offset, TEdgeEval::eval(offset));
       }
     }
+
+    //    O
+    //
+    // O  X  O
+    //
+    //    O
+    if (config.jumpOverBlock) {
+      directions.emplace_back(TPos{2, 0, 0}, TEdgeEval::eval(TPos{2, 0, 0}));
+      directions.emplace_back(TPos{0, 0, 2}, TEdgeEval::eval(TPos{0, 0, 2}));
+      directions.emplace_back(TPos{-2, 0, 0}, TEdgeEval::eval(TPos{-2, 0, 0}));
+      directions.emplace_back(TPos{0, 0, -2}, TEdgeEval::eval(TPos{0, 0, -2}));
+    }
+
     return directions;
   }
 

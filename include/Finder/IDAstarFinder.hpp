@@ -91,8 +91,8 @@ class IDAstarFinder
     std::unordered_set<TPos> stackList;
 
     // directions for selecting neighbours
-    std::vector<Direction<CostT>> directions =
-        getDirections<CostT, TEdgeEval>();
+    std::vector<typename BASE::Direction> directions =
+        BASE::template getDirections<TEdgeEval>();
     const CostT fallCost = TEdgeEval::eval(TPos{0, 1, 0});
     const CostT climbCost = TEdgeEval::eval(TPos{0, 1, 0});
 
@@ -140,7 +140,7 @@ class IDAstarFinder
           BASE::getBlockType(now.pos + TPos{0, 3, 0}).is(BlockType::AIR);
 
       // get next neighbour
-      const Direction<CostT> &dir = directions[now.dirIdx];
+      const typename BASE::Direction &dir = directions[now.dirIdx];
 
       std::vector<TPos> newOffsets = BASE::isAbleToWalkTo(now.pos, dir.offset);
       for (TPos &newOffset : newOffsets) {

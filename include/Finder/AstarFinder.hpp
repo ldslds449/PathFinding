@@ -56,8 +56,8 @@ class AstarFinder
     std::unordered_map<TPos, PosInfo> infoTable;
 
     // directions for selecting neighbours
-    std::vector<Direction<CostT>> directions =
-        getDirections<CostT, TEdgeEval>();
+    std::vector<typename BASE::Direction> directions =
+        BASE::template getDirections<TEdgeEval>();
     const CostT fallCost = TEdgeEval::eval(TPos{0, 1, 0});
     const CostT climbCost = TEdgeEval::eval(TPos{0, 1, 0});
 
@@ -99,7 +99,7 @@ class AstarFinder
       }
 
       // find neighbour
-      for (const Direction<CostT> &dir : directions) {
+      for (const typename BASE::Direction &dir : directions) {
         std::vector<TPos> newOffsets = BASE::isAbleToWalkTo(now, dir.offset);
         for (TPos &newOffset : newOffsets) {
           CostT addGCost = dir.cost;
