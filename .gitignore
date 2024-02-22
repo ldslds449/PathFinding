@@ -3,3 +3,5 @@ build/*
 app/*
 TODO
 *.drawio
+CMakeLists.txt
+test.cpp
