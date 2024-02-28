@@ -31,7 +31,6 @@ class FinderConfig {
  public:
   bool moveDiagonally = true;
   bool jumpOverBlock = false;
-  float fallingDamageTolerance = 0.0;
   bool enableFalling = true;
 };
 
@@ -237,6 +236,13 @@ class FinderBase {
   }
 
   /*
+   * get falling damage tolerance
+   */
+  inline float getfallingDamageTolerance() const {
+    return static_cast<const TDrived *>(this)->getfallingDamageToleranceImpl();
+  }
+
+  /*
    * This should be implemented in subclass
    */
   virtual std::tuple<PathResult, std::shared_ptr<Path<TPos>>, U64> findPathImpl(
@@ -279,6 +285,11 @@ class FinderBase {
    * This may be override in subclass
    */
   virtual int getMaxYImpl() const { return 320; };
+
+  /*
+   * This may be override in subclass
+   */
+  inline float getfallingDamageToleranceImpl() const { return 0.0; }
 
  protected:
   inline bool isTimeUp(const std::chrono::steady_clock::time_point &start,
@@ -398,7 +409,7 @@ class FinderBase {
                landingPos.y > getMinY());
       if (landingType.is(BlockType::SAFE) &&
           getFallDamage(landingPos, (blocksPos[COORD::FLOOR] - landingPos).y) <=
-              config.fallingDamageTolerance) {
+              getfallingDamageTolerance()) {
         possiblePos.emplace_back(landingPos - from);
       }
     }
@@ -520,7 +531,7 @@ class FinderBase {
         BlockType upType = getBlockType(upPos);
         if (upType.isNot(BlockType::AIR)) break;
         if (getFallDamage(to, upPos.y - blocksPos[COORD::ORIG].y) <=
-            config.fallingDamageTolerance) {
+            getfallingDamageTolerance()) {
           TPos platformPos = upPos + XZoffset,
                platformPos_up1 = platformPos + TPos{0, 1, 0},
                platformPos_up2 = platformPos + TPos{0, 2, 0},
