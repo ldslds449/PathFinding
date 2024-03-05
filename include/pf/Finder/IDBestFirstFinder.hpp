@@ -1,7 +1,7 @@
 #ifndef PATHFINDING_FINDER_IDBESTFIRSTFINDER_H_
 #define PATHFINDING_FINDER_IDBESTFIRSTFINDER_H_
 
-#include "IDAstarFinder.hpp"
+#include <pf/Finder/IDAstarFinder.hpp>
 
 namespace pathfinding {
 

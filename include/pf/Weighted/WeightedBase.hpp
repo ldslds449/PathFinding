@@ -1,7 +1,7 @@
 #ifndef PATHFINDING_WEIGHTED_WEIGHTEDBASE_H_
 #define PATHFINDING_WEIGHTED_WEIGHTEDBASE_H_
 
-#include "Type.hpp"
+#include <pf/Type.hpp>
 
 namespace pathfinding {
 

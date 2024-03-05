@@ -1,7 +1,7 @@
 #ifndef PATHFINDING_EVALUATE_MANHATTAN_H_
 #define PATHFINDING_EVALUATE_MANHATTAN_H_
 
-#include "EvaluateBase.hpp"
+#include <pf/Evaluate/EvaluateBase.hpp>
 
 namespace pathfinding {
 

@@ -1,7 +1,7 @@
 #ifndef PATHFINDING_FINDER_ILSFINDER_H_
 #define PATHFINDING_FINDER_ILSFINDER_H_
 
-#include "IDAstarFinder.hpp"
+#include <pf/Finder/IDAstarFinder.hpp>
 
 namespace pathfinding {
 

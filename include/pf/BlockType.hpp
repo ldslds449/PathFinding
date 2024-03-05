@@ -1,7 +1,7 @@
 #ifndef PATHFINDING_BLOCKTYPE_H_
 #define PATHFINDING_BLOCKTYPE_H_
 
-#include "Type.hpp"
+#include <pf/Type.hpp>
 
 namespace pathfinding {
 

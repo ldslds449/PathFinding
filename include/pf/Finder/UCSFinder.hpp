@@ -1,7 +1,7 @@
 #ifndef PATHFINDING_FINDER_UCSFINDER_H_
 #define PATHFINDING_FINDER_UCSFINDER_H_
 
-#include "AstarFinder.hpp"
+#include <pf/Finder/AstarFinder.hpp>
 
 namespace pathfinding {
 

@@ -3,8 +3,8 @@
 
 #include <tuple>
 
-#include "GoalBase.hpp"
-#include "Vec3.hpp"
+#include <pf/Goal/GoalBase.hpp>
+#include <pf/Vec3.hpp>
 
 namespace pathfinding {
 

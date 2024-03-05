@@ -6,11 +6,11 @@
 #include <stack>
 #include <unordered_set>
 
-#include "Evaluate/Evaluate.hpp"
-#include "Finder/FinderBase.hpp"
-#include "Type.hpp"
-#include "Vec3.hpp"
-#include "Weighted/Weighted.hpp"
+#include <pf/Evaluate/Evaluate.hpp>
+#include <pf/Finder/FinderBase.hpp>
+#include <pf/Weighted/Weighted.hpp>
+#include <pf/Type.hpp>
+#include <pf/Vec3.hpp>
 
 namespace pathfinding {
 

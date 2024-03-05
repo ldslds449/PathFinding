@@ -1,9 +1,9 @@
 #ifndef PATHFINDING_GOAL_DISTANCEGOAL_H_
 #define PATHFINDING_GOAL_DISTANCEGOAL_H_
 
-#include "GoalBase.hpp"
-#include "RangeGoal.hpp"
-#include "Vec3.hpp"
+#include <pf/Goal/GoalBase.hpp>
+#include <pf/Goal/RangeGoal.hpp>
+#include <pf/Vec3.hpp>
 
 namespace pathfinding {
 

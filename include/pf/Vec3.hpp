@@ -5,7 +5,7 @@
 #include <functional>
 #include <ostream>
 
-#include "Type.hpp"
+#include <pf/Type.hpp>
 
 namespace pathfinding {
 

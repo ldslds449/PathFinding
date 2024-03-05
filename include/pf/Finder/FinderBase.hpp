@@ -13,10 +13,10 @@
 #include <utility>
 #include <vector>
 
-#include "BlockType.hpp"
-#include "Goal/Goal.hpp"
-#include "Path.hpp"
-#include "Vec3.hpp"
+#include <pf/Goal/Goal.hpp>
+#include <pf/BlockType.hpp>
+#include <pf/Path.hpp>
+#include <pf/Vec3.hpp>
 
 namespace pathfinding {
 

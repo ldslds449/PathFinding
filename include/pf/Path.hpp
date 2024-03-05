@@ -4,7 +4,7 @@
 #include <ostream>
 #include <vector>
 
-#include "Vec3.hpp"
+#include <pf/Vec3.hpp>
 
 namespace pathfinding {
 

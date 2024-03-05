@@ -1,8 +1,8 @@
 #ifndef PATHFINDING_EVALUATE_EVALUATEBASE_H_
 #define PATHFINDING_EVALUATE_EVALUATEBASE_H_
 
-#include "Vec3.hpp"
-#include "Type.hpp"
+#include <pf/Vec3.hpp>
+#include <pf/Type.hpp>
 
 namespace pathfinding {
 

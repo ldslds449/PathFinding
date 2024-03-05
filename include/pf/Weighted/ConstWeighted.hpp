@@ -1,8 +1,8 @@
 #ifndef PATHFINDING_WEIGHTED_CONSTWEIGHTED_H_
 #define PATHFINDING_WEIGHTED_CONSTWEIGHTED_H_
 
-#include "Type.hpp"
-#include "WeightedBase.hpp"
+#include <pf/Type.hpp>
+#include <pf/Weighted/WeightedBase.hpp>
 
 namespace pathfinding {
 
