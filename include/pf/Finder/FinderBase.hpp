@@ -270,11 +270,12 @@ class FinderBase {
    * This may be override in subclass
    */
   virtual float getFallDamageImpl(
-      [[maybe_unused]] const TPos &landingPos, const typename TPos::value_type &height) const {
+      [[maybe_unused]] const TPos &landingPos,
+      const typename TPos::value_type &height) const {
     // do not apply any damage reduction
     // you can override this function to calculate a more precise damage value.
     if (height < 3.375) return 0.0;
-    float damage = std::floor(height - 3.375) + 1;
+    float damage = static_cast<float>(std::floor(height - 3.375)) + 1;
     return damage;
   }
 
