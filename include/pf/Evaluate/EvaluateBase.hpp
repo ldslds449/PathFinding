@@ -1,5 +1,7 @@
-#ifndef PATHFINDING_EVALUATE_EVALUATEBASE_H_
-#define PATHFINDING_EVALUATE_EVALUATEBASE_H_
+// Copyright 2024 ldslds449
+
+#ifndef INCLUDE_PF_EVALUATE_EVALUATEBASE_HPP_
+#define INCLUDE_PF_EVALUATE_EVALUATEBASE_HPP_
 
 #include <pf/Vec3.hpp>
 #include <pf/Type.hpp>
@@ -14,12 +16,12 @@ class EvaluateBase {
   template <class TPos>
   inline static CostT eval(const TPos &pos, const TPos &target) {
     return TDrived::evalImpl(pos, target);
-  };
+  }
 
   template <class TPos>
   inline static CostT eval(const TPos &target) {
     return TDrived::evalImpl(TPos(), target);
-  };
+  }
 
  private:
   EvaluateBase() {}
@@ -30,4 +32,4 @@ class EvaluateBase {
 
 }  // namespace pathfinding
 
-#endif  // PATHFINDING_EVALUATE_EVALUATEBASE_H_
+#endif  // INCLUDE_PF_EVALUATE_EVALUATEBASE_HPP_

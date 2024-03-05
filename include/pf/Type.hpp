@@ -1,5 +1,7 @@
-#ifndef PATHFINDING_TYPE_H_
-#define PATHFINDING_TYPE_H_
+// Copyright 2024 ldslds449
+
+#ifndef INCLUDE_PF_TYPE_HPP_
+#define INCLUDE_PF_TYPE_HPP_
 
 #include <stdint.h>
 
@@ -12,4 +14,4 @@ using CostT = float;
 
 }  // namespace pathfinding
 
-#endif  // PATHFINDING_TYPE_H_
+#endif  // INCLUDE_PF_TYPE_HPP_

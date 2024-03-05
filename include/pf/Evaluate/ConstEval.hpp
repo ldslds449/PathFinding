@@ -1,5 +1,7 @@
-#ifndef PATHFINDING_EVALUATE_CONSTEVAL_H_
-#define PATHFINDING_EVALUATE_CONSTEVAL_H_
+// Copyright 2024 ldslds449
+
+#ifndef INCLUDE_PF_EVALUATE_CONSTEVAL_HPP_
+#define INCLUDE_PF_EVALUATE_CONSTEVAL_HPP_
 
 #include <pf/Evaluate/EvaluateBase.hpp>
 
@@ -13,7 +15,7 @@ class ConstEval final : public EvaluateBase<ConstEval<Val>> {
   template <class TPos>
   static CostT evalImpl(const TPos &pos, const TPos &target) {
     return static_cast<CostT>(Val);
-  };
+  }
 
   ConstEval() = delete;
 };
@@ -22,4 +24,4 @@ class ConstEval final : public EvaluateBase<ConstEval<Val>> {
 
 }  // namespace pathfinding
 
-#endif  // PATHFINDING_EVALUATE_CONSTEVAL_H_
+#endif  // INCLUDE_PF_EVALUATE_CONSTEVAL_HPP_

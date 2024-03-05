@@ -1,12 +1,14 @@
-#ifndef PATHFINDING_FINDER_FINDER_H_
-#define PATHFINDING_FINDER_FINDER_H_
+// Copyright 2024 ldslds449
+
+#ifndef INCLUDE_PF_FINDER_FINDER_HPP_
+#define INCLUDE_PF_FINDER_FINDER_HPP_
 
 #include <pf/Finder/AstarFinder.hpp>
+#include <pf/Finder/BestFirstFinder.hpp>
 #include <pf/Finder/BiAstarFinder.hpp>
 #include <pf/Finder/IDAstarFinder.hpp>
+#include <pf/Finder/IDBestFirstFinder.hpp>
 #include <pf/Finder/ILSFinder.hpp>
 #include <pf/Finder/UCSFinder.hpp>
-#include <pf/Finder/BestFirstFinder.hpp>
-#include <pf/Finder/IDBestFirstFinder.hpp>
 
-#endif  // PATHFINDING_FINDER_FINDER_H_
+#endif  // INCLUDE_PF_FINDER_FINDER_HPP_

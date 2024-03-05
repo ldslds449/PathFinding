@@ -1,5 +1,7 @@
-#ifndef PATHFINDING_GOAL_COMBINEGOAL_H_
-#define PATHFINDING_GOAL_COMBINEGOAL_H_
+// Copyright 2024 ldslds449
+
+#ifndef INCLUDE_PF_GOAL_COMBINEGOAL_HPP_
+#define INCLUDE_PF_GOAL_COMBINEGOAL_HPP_
 
 #include <tuple>
 
@@ -15,7 +17,7 @@ class CombineGoal : public GoalBase<TDeducedPos<TMainGoal>> {
   using TPos = TDeducedPos<TMainGoal>;
 
  public:
-  virtual bool isSuitableGoal(const TPos &pos) const override {
+  bool isSuitableGoal(const TPos &pos) const override {
     auto checkOneGoal = [&](auto &&...goal) {
       return (goal.isSuitableGoal(pos) && ...);
     };
@@ -23,7 +25,8 @@ class CombineGoal : public GoalBase<TDeducedPos<TMainGoal>> {
   }
 
   CombineGoal(const TMainGoal &main_goal, const TGoals &..._goals)
-      : GoalBase<TPos>(main_goal.getGoalPosition()), goals(main_goal, _goals...) {}
+      : GoalBase<TPos>(main_goal.getGoalPosition()),
+        goals(main_goal, _goals...) {}
 
   const std::tuple<TMainGoal, TGoals...> goals;
 };
@@ -32,4 +35,4 @@ class CombineGoal : public GoalBase<TDeducedPos<TMainGoal>> {
 
 };  // namespace pathfinding
 
-#endif  // PATHFINDING_GOAL_COMBINEGOAL_H_
+#endif  // INCLUDE_PF_GOAL_COMBINEGOAL_HPP_

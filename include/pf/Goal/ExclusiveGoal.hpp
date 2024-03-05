@@ -1,5 +1,7 @@
-#ifndef PATHFINDING_GOAL_EXCLUSIVEGOAL_H_
-#define PATHFINDING_GOAL_EXCLUSIVEGOAL_H_
+// Copyright 2024 ldslds449
+
+#ifndef INCLUDE_PF_GOAL_EXCLUSIVEGOAL_HPP_
+#define INCLUDE_PF_GOAL_EXCLUSIVEGOAL_HPP_
 
 #include <pf/Goal/GoalBase.hpp>
 #include <pf/Vec3.hpp>
@@ -13,11 +15,11 @@ class ExclusiveGoal : public GoalBase<TDeducedPos<TGoal>> {
   using TPos = TDeducedPos<TGoal>;
 
  public:
-  virtual bool isSuitableGoal(const TPos &pos) const override {
+  bool isSuitableGoal(const TPos &pos) const override {
     return !goal.isSuitableGoal(pos);
   }
 
-  ExclusiveGoal(const TGoal &_goal)
+  explicit ExclusiveGoal(const TGoal &_goal)
       : GoalBase<TPos>(_goal.getGoalPosition()), goal(_goal) {}
 
   TGoal goal;
@@ -27,4 +29,4 @@ class ExclusiveGoal : public GoalBase<TDeducedPos<TGoal>> {
 
 };  // namespace pathfinding
 
-#endif  // PATHFINDING_GOAL_EXCLUSIVEGOAL_H_
+#endif  // INCLUDE_PF_GOAL_EXCLUSIVEGOAL_HPP_

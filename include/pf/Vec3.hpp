@@ -1,6 +1,9 @@
-#ifndef PATHFINDING_VEC3_H_
-#define PATHFINDING_VEC3_H_
+// Copyright 2024 ldslds449
 
+#ifndef INCLUDE_PF_VEC3_HPP_
+#define INCLUDE_PF_VEC3_HPP_
+
+#include <algorithm>
 #include <cmath>
 #include <functional>
 #include <ostream>
@@ -35,13 +38,6 @@ class Vec3 {
 
   bool operator!=(const Vec3<T> &target) const {
     return (x != target.x) || (y != target.y) || (z != target.z);
-  }
-
-  Vec3<T> &operator=(const Vec3<T> &target) {
-    x = target.x;
-    y = target.y;
-    z = target.z;
-    return *this;
   }
 
   Vec3<T> operator+(const Vec3<T> &target) const {
@@ -215,4 +211,4 @@ struct hash<pathfinding::Vec3<T>> {
 
 }  // namespace std
 
-#endif  // PATHFINDING_VEC3_H_
+#endif  // INCLUDE_PF_VEC3_HPP_

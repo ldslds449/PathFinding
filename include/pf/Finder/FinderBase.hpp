@@ -1,5 +1,7 @@
-#ifndef PATHFINDING_FINDER_FINDERBASE_H_
-#define PATHFINDING_FINDER_FINDERBASE_H_
+// Copyright 2024 ldslds449
+
+#ifndef INCLUDE_PF_FINDER_FINDERBASE_HPP_
+#define INCLUDE_PF_FINDER_FINDERBASE_HPP_
 
 #include <chrono>
 #include <cmath>
@@ -13,8 +15,8 @@
 #include <utility>
 #include <vector>
 
-#include <pf/Goal/Goal.hpp>
 #include <pf/BlockType.hpp>
+#include <pf/Goal/Goal.hpp>
 #include <pf/Path.hpp>
 #include <pf/Vec3.hpp>
 
@@ -219,7 +221,7 @@ class FinderBase {
                              const typename TPos::value_type &height) const {
     return static_cast<const TDrived *>(this)->getFallDamageImpl(landingPos,
                                                                  height);
-  };
+  }
 
   /*
    * get minimum y of current dimension
@@ -268,23 +270,23 @@ class FinderBase {
    * This may be override in subclass
    */
   virtual float getFallDamageImpl(
-      const TPos &landingPos, const typename TPos::value_type &height) const {
+      [[maybe_unused]] const TPos &landingPos, const typename TPos::value_type &height) const {
     // do not apply any damage reduction
     // you can override this function to calculate a more precise damage value.
     if (height < 3.375) return 0.0;
     float damage = std::floor(height - 3.375) + 1;
     return damage;
-  };
+  }
 
   /*
    * This may be override in subclass
    */
-  virtual int getMinYImpl() const { return -64; };
+  virtual int getMinYImpl() const { return -64; }
 
   /*
    * This may be override in subclass
    */
-  virtual int getMaxYImpl() const { return 320; };
+  virtual int getMaxYImpl() const { return 320; }
 
   /*
    * This may be override in subclass
@@ -326,7 +328,7 @@ class FinderBase {
         from + TPos{0, 2, 0},
     };
     // alias
-    enum COORD : short {
+    enum COORD : int16_t {
       FLOOR = 0,
       FLOOR_UP1,
       FLOOR_UP2,
@@ -460,7 +462,7 @@ class FinderBase {
         to + TPos{0, 3, 0},
     };
     // alias
-    enum COORD : short {
+    enum COORD : int16_t {
       FLOOR = 0,
       FLOOR_UP1,
       FLOOR_UP2,
@@ -608,7 +610,7 @@ class FinderBase {
 
  private:
   FinderBase() = default;
-  FinderBase(const FinderConfig &_config) : config(_config) {}
+  explicit FinderBase(const FinderConfig &_config) : config(_config) {}
 
  private:
   friend TDrived;
@@ -616,4 +618,4 @@ class FinderBase {
 
 }  // namespace pathfinding
 
-#endif  // PATHFINDING_FINDER_FINDERBASE_H_
+#endif  // INCLUDE_PF_FINDER_FINDERBASE_HPP_

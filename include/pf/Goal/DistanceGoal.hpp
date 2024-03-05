@@ -1,5 +1,7 @@
-#ifndef PATHFINDING_GOAL_DISTANCEGOAL_H_
-#define PATHFINDING_GOAL_DISTANCEGOAL_H_
+// Copyright 2024 ldslds449
+
+#ifndef INCLUDE_PF_GOAL_DISTANCEGOAL_HPP_
+#define INCLUDE_PF_GOAL_DISTANCEGOAL_HPP_
 
 #include <pf/Goal/GoalBase.hpp>
 #include <pf/Goal/RangeGoal.hpp>
@@ -14,7 +16,7 @@ class DistanceGoal : public GoalBase<TPos> {
   using T = typename TPos::value_type;
 
  public:
-  virtual bool isSuitableGoal(const TPos &pos) const override {
+  bool isSuitableGoal(const TPos &pos) const override {
     return TEval<TPos>::eval(pos) <= dist_tol;
   }
 
@@ -28,4 +30,4 @@ class DistanceGoal : public GoalBase<TPos> {
 
 };  // namespace pathfinding
 
-#endif  // PATHFINDING_GOAL_DISTANCEGOAL_H_
+#endif  // INCLUDE_PF_GOAL_DISTANCEGOAL_HPP_

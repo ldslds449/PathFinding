@@ -1,5 +1,7 @@
-#ifndef PATHFINDING_EVALUATE_EUCLIDEAN_H_
-#define PATHFINDING_EVALUATE_EUCLIDEAN_H_
+// Copyright 2024 ldslds449
+
+#ifndef INCLUDE_PF_EVALUATE_EUCLIDEAN_HPP_
+#define INCLUDE_PF_EVALUATE_EUCLIDEAN_HPP_
 
 #include <cmath>
 
@@ -14,7 +16,7 @@ class Euclidean final : public EvaluateBase<Euclidean> {
   template <class TPos>
   static CostT evalImpl(const TPos &pos, const TPos &target) {
     return std::sqrt(pos.template squaredEuclideanDist<CostT>(target));
-  };
+  }
 
   Euclidean() = delete;
 };
@@ -23,4 +25,4 @@ class Euclidean final : public EvaluateBase<Euclidean> {
 
 }  // namespace pathfinding
 
-#endif  // PATHFINDING_EVALUATE_EUCLIDEAN_H_
+#endif  // INCLUDE_PF_EVALUATE_EUCLIDEAN_HPP_

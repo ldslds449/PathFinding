@@ -1,5 +1,7 @@
-#ifndef PATHFINDING_WEIGHTED_CONSTWEIGHTED_H_
-#define PATHFINDING_WEIGHTED_CONSTWEIGHTED_H_
+// Copyright 2024 ldslds449
+
+#ifndef INCLUDE_PF_WEIGHTED_CONSTWEIGHTED_HPP_
+#define INCLUDE_PF_WEIGHTED_CONSTWEIGHTED_HPP_
 
 #include <pf/Type.hpp>
 #include <pf/Weighted/WeightedBase.hpp>
@@ -20,7 +22,7 @@ class ConstWeighted final
     } else if constexpr (HWeight == 1) {
       return g * static_cast<CostT>(GWeight) + h;
     }
-  };
+  }
 
   ConstWeighted() = delete;
 };
@@ -29,4 +31,4 @@ class ConstWeighted final
 
 }  // namespace pathfinding
 
-#endif  // PATHFINDING_WEIGHTED_CONSTWEIGHTED_H_
+#endif  // INCLUDE_PF_WEIGHTED_CONSTWEIGHTED_HPP_

@@ -1,5 +1,7 @@
-#ifndef PATHFINDING_PATH_H_
-#define PATHFINDING_PATH_H_
+// Copyright 2024 ldslds449
+
+#ifndef INCLUDE_PF_PATH_HPP_
+#define INCLUDE_PF_PATH_HPP_
 
 #include <ostream>
 #include <vector>
@@ -33,4 +35,4 @@ class Path {
 
 }  // namespace pathfinding
 
-#endif  // PATHFINDING_PATH_H_
+#endif  // INCLUDE_PF_PATH_HPP_

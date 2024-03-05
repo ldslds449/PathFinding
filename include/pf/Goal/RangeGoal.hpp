@@ -1,5 +1,7 @@
-#ifndef PATHFINDING_GOAL_RANGEGOAL_H_
-#define PATHFINDING_GOAL_RANGEGOAL_H_
+// Copyright 2024 ldslds449
+
+#ifndef INCLUDE_PF_GOAL_RANGEGOAL_HPP_
+#define INCLUDE_PF_GOAL_RANGEGOAL_HPP_
 
 #include <pf/Goal/GoalBase.hpp>
 #include <pf/Vec3.hpp>
@@ -13,7 +15,7 @@ class RangeGoal : public GoalBase<TPos> {
   using T = typename TPos::value_type;
 
  public:
-  virtual bool isSuitableGoal(const TPos &pos) const override {
+  bool isSuitableGoal(const TPos &pos) const override {
     return ((x_tol_neg < 0 && pos.x <= GoalBase<TPos>::goalPos.x) ||
             (x_tol_pos < 0 && GoalBase<TPos>::goalPos.x <= pos.x) ||
             ((GoalBase<TPos>::goalPos.x - x_tol_neg <= pos.x) &&
@@ -58,4 +60,4 @@ class RangeGoal : public GoalBase<TPos> {
 
 };  // namespace pathfinding
 
-#endif  // PATHFINDING_GOAL_RANGEGOAL_H_
+#endif  // INCLUDE_PF_GOAL_RANGEGOAL_HPP_

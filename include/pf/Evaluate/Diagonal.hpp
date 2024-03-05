@@ -1,5 +1,7 @@
-#ifndef PATHFINDING_EVALUATE_DIAGONAL_H_
-#define PATHFINDING_EVALUATE_DIAGONAL_H_
+// Copyright 2024 ldslds449
+
+#ifndef INCLUDE_PF_EVALUATE_DIAGONAL_HPP_
+#define INCLUDE_PF_EVALUATE_DIAGONAL_HPP_
 
 #include <pf/Evaluate/EvaluateBase.hpp>
 
@@ -12,7 +14,7 @@ class Diagonal final : public EvaluateBase<Diagonal> {
   template <class TPos>
   static CostT evalImpl(const TPos &pos, const TPos &target) {
     return static_cast<CostT>(pos.diagonalDist(target));
-  };
+  }
 
   Diagonal() = delete;
 };
@@ -21,4 +23,4 @@ class Diagonal final : public EvaluateBase<Diagonal> {
 
 }  // namespace pathfinding
 
-#endif  // PATHFINDING_EVALUATE_DIAGONAL_H_
+#endif  // INCLUDE_PF_EVALUATE_DIAGONAL_HPP_

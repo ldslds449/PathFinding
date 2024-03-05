@@ -1,14 +1,21 @@
-#ifndef PATHFINDING_FINDER_ASTARFINDER_H_
-#define PATHFINDING_FINDER_ASTARFINDER_H_
+// Copyright 2024 ldslds449
+
+#ifndef INCLUDE_PF_FINDER_ASTARFINDER_HPP_
+#define INCLUDE_PF_FINDER_ASTARFINDER_HPP_
 
 #include <chrono>
+#include <memory>
+#include <tuple>
+#include <unordered_map>
+#include <utility>
+#include <vector>
 
 #include <pf/Evaluate/Evaluate.hpp>
 #include <pf/Finder/FinderBase.hpp>
 #include <pf/Heap/TableHeap.hpp>
-#include <pf/Weighted/Weighted.hpp>
 #include <pf/Type.hpp>
 #include <pf/Vec3.hpp>
+#include <pf/Weighted/Weighted.hpp>
 
 namespace pathfinding {
 
@@ -25,7 +32,7 @@ class AstarFinder
       AstarFinder<TDrived, TPos, TEdgeEval, TEstimateEval, TWeighted>, TPos>;
 
  public:
-  virtual std::tuple<PathResult, std::shared_ptr<Path<TPos>>, U64> findPathImpl(
+  std::tuple<PathResult, std::shared_ptr<Path<TPos>>, U64> findPathImpl(
       const TPos &from, const goal::GoalBase<TPos> &goal, const U64 &timeLimit,
       const U64 &nodeLimit) override {
     // record the information of a node
@@ -35,7 +42,6 @@ class AstarFinder
     };
 
     const TPos &to = goal.getGoalPosition();
-    const bool goalExist = BASE::isGoalExist(goal);
 
     // time limit
     auto startTime = std::chrono::steady_clock::now();
@@ -154,9 +160,9 @@ class AstarFinder
   }
 
   AstarFinder() = default;
-  AstarFinder(const FinderConfig &_config) : BASE(_config) {}
+  explicit AstarFinder(const FinderConfig &_config) : BASE(_config) {}
 };
 
 }  // namespace pathfinding
 
-#endif  // PATHFINDING_FINDER_ASTARFINDER_H_
+#endif  // INCLUDE_PF_FINDER_ASTARFINDER_HPP_

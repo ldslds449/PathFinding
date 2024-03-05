@@ -1,14 +1,17 @@
-#ifndef PATHFINDING_HEAP_TABLEHEAP_H_
-#define PATHFINDING_HEAP_TABLEHEAP_H_
+// Copyright 2024 ldslds449
+
+#ifndef INCLUDE_PF_HEAP_TABLEHEAP_HPP_
+#define INCLUDE_PF_HEAP_TABLEHEAP_HPP_
 
 #include <exception>
 #include <functional>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 
 #define L_CHILD(idx) ((idx) * 2 + 1)
 #define R_CHILD(idx) ((idx) * 2 + 2)
-#define PARENT(idx) (((idx) - 1) / 2)
+#define PARENT(idx) (((idx)-1) / 2)
 
 namespace pathfinding {
 
@@ -19,10 +22,10 @@ class TableHeap {
  private:
   // entry for table
   struct Entry {
-    std::size_t idx;
+    std::size_t idx = -1;
     TVal val;
     Entry() = default;
-    Entry(const std::size_t &_idx, const TVal &_val) : idx(_idx), val(_val) {};
+    Entry(const std::size_t &_idx, const TVal &_val) : idx(_idx), val(_val) {}
   };
 
   std::unordered_map<TKey, Entry> table;
@@ -42,7 +45,7 @@ class TableHeap {
   }
 
   void sink(std::size_t idx) {
-    while (0 <= idx && idx < arr.size()) {
+    while (idx < arr.size()) {
       std::size_t top;
       if (R_CHILD(idx) >= arr.size() && L_CHILD(idx) >= arr.size()) {
         // no children
@@ -60,7 +63,7 @@ class TableHeap {
   }
 
   void swim(std::size_t idx) {
-    while (0 <= idx && idx < arr.size()) {
+    while (idx < arr.size()) {
       if (idx == 0) break;  // reach root
       std::size_t top = compare(idx, PARENT(idx));
       if (top == PARENT(idx)) break;  // stable
@@ -74,7 +77,7 @@ class TableHeap {
   // reutrn: if find the element
   TVal lookup(const TKey &key) {
     auto it = table.find(key);
-    if (it == table.end()){
+    if (it == table.end()) {
       throw std::runtime_error("heap::lookup - element is not found");
     }
     return it->second.val;
@@ -136,7 +139,7 @@ class TableHeap {
 
   std::size_t size() const { return arr.size(); }
 
-  TableHeap(TCmp _cmp) : cmp(_cmp) {}
+  explicit TableHeap(TCmp _cmp) : cmp(_cmp) {}
 };
 
 }  // namespace pathfinding
@@ -145,4 +148,4 @@ class TableHeap {
 #undef R_CHILD
 #undef PARENT
 
-#endif  // PATHFINDING_HEAP_TABLEHEAP_H_
+#endif  // INCLUDE_PF_HEAP_TABLEHEAP_HPP_

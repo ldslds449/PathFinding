@@ -1,8 +1,11 @@
-#ifndef PATHFINDING_HEAP_HEAP_H_
-#define PATHFINDING_HEAP_HEAP_H_
+// Copyright 2024 ldslds449
+
+#ifndef INCLUDE_PF_HEAP_HEAP_HPP_
+#define INCLUDE_PF_HEAP_HEAP_HPP_
 
 #include <exception>
 #include <functional>
+#include <utility>
 #include <vector>
 
 #define L_CHILD(idx) ((idx) * 2 + 1)
@@ -85,7 +88,7 @@ class Heap {
 
   std::size_t size() const { return arr.size(); }
 
-  Heap(TCmp _cmp) : cmp(_cmp) {}
+  explicit Heap(TCmp _cmp) : cmp(_cmp) {}
 };
 
 }  // namespace pathfinding
@@ -94,4 +97,4 @@ class Heap {
 #undef R_CHILD
 #undef PARENT
 
-#endif  // PATHFINDING_HEAP_HEAP_H_
+#endif  // INCLUDE_PF_HEAP_HEAP_HPP_

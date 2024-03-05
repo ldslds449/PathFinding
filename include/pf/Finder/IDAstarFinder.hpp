@@ -1,16 +1,22 @@
-#ifndef PATHFINDING_FINDER_IDASTARFINDER_H_
-#define PATHFINDING_FINDER_IDASTARFINDER_H_
+// Copyright 2024 ldslds449
 
+#ifndef INCLUDE_PF_FINDER_IDASTARFINDER_HPP_
+#define INCLUDE_PF_FINDER_IDASTARFINDER_HPP_
+
+#include <algorithm>
 #include <chrono>
 #include <limits>
+#include <memory>
 #include <stack>
+#include <tuple>
 #include <unordered_set>
+#include <vector>
 
 #include <pf/Evaluate/Evaluate.hpp>
 #include <pf/Finder/FinderBase.hpp>
-#include <pf/Weighted/Weighted.hpp>
 #include <pf/Type.hpp>
 #include <pf/Vec3.hpp>
+#include <pf/Weighted/Weighted.hpp>
 
 namespace pathfinding {
 
@@ -27,7 +33,7 @@ class IDAstarFinder
       IDAstarFinder<TDrived, TPos, TEdgeEval, TEstimateEval, TWeighted>, TPos>;
 
  public:
-  virtual std::tuple<PathResult, std::shared_ptr<Path<TPos>>, U64> findPathImpl(
+  std::tuple<PathResult, std::shared_ptr<Path<TPos>>, U64> findPathImpl(
       const TPos &from, const goal::GoalBase<TPos> &goal, const U64 &timeLimit,
       const U64 &nodeLimit) override {
     CostT costLimit = TEstimateEval::eval(from, goal.getGoalPosition());
@@ -63,7 +69,7 @@ class IDAstarFinder
   }
 
   IDAstarFinder() = default;
-  IDAstarFinder(const FinderConfig &_config) : BASE(_config) {}
+  explicit IDAstarFinder(const FinderConfig &_config) : BASE(_config) {}
 
  protected:
   std::tuple<PathResult, std::shared_ptr<Path<TPos>>, CostT, U64> LimitedAstar(
@@ -72,8 +78,8 @@ class IDAstarFinder
     struct Node {
       TPos pos;
       CostT gcost;
-      short dirIdx;
-      Node(const TPos &p, const CostT &g, const short &d)
+      int16_t dirIdx = -1;
+      Node(const TPos &p, const CostT &g, const int16_t &d)
           : pos(p), gcost(g), dirIdx(d) {}
       Node() = default;
     };
@@ -193,4 +199,4 @@ class IDAstarFinder
 
 }  // namespace pathfinding
 
-#endif  // PATHFINDING_FINDER_IDASTARFINDER_H_
+#endif  // INCLUDE_PF_FINDER_IDASTARFINDER_HPP_

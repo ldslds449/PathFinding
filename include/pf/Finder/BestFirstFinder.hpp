@@ -1,5 +1,7 @@
-#ifndef PATHFINDING_FINDER_BESTFIRSTFINDER_H_
-#define PATHFINDING_FINDER_BESTFIRSTFINDER_H_
+// Copyright 2024 ldslds449
+
+#ifndef INCLUDE_PF_FINDER_BESTFIRSTFINDER_HPP_
+#define INCLUDE_PF_FINDER_BESTFIRSTFINDER_HPP_
 
 #include <pf/Finder/AstarFinder.hpp>
 
@@ -10,19 +12,18 @@ template <class TDrived, class TPos = Position,
           class TEstimateEval = eval::Manhattan, class... Dummy2>
 class BestFirstFinder
     : public AstarFinder<
-          BestFirstFinder<TDrived, TPos, Dummy1, TEstimateEval, Dummy2...>, TPos,
-          eval::ConstEval<>, TEstimateEval, weight::ConstWeighted<>> {
+          BestFirstFinder<TDrived, TPos, Dummy1, TEstimateEval, Dummy2...>,
+          TPos, eval::ConstEval<>, TEstimateEval, weight::ConstWeighted<>> {
  private:
-  using BASE =
-      AstarFinder<BestFirstFinder<TDrived, TPos, Dummy1, TEstimateEval, Dummy2...>,
-                  TPos, eval::ConstEval<>, TEstimateEval,
-                  weight::ConstWeighted<>>;
+  using BASE = AstarFinder<
+      BestFirstFinder<TDrived, TPos, Dummy1, TEstimateEval, Dummy2...>, TPos,
+      eval::ConstEval<>, TEstimateEval, weight::ConstWeighted<>>;
 
  public:
   BestFirstFinder() = default;
-  BestFirstFinder(const FinderConfig &_config) : BASE(_config) {}
+  explicit BestFirstFinder(const FinderConfig &_config) : BASE(_config) {}
 };
 
 }  // namespace pathfinding
 
-#endif  // PATHFINDING_FINDER_BESTFIRSTFINDER_H_
+#endif  // INCLUDE_PF_FINDER_BESTFIRSTFINDER_HPP_

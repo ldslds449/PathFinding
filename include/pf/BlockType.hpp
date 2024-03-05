@@ -1,5 +1,7 @@
-#ifndef PATHFINDING_BLOCKTYPE_H_
-#define PATHFINDING_BLOCKTYPE_H_
+// Copyright 2024 ldslds449
+
+#ifndef INCLUDE_PF_BLOCKTYPE_HPP_
+#define INCLUDE_PF_BLOCKTYPE_HPP_
 
 #include <pf/Type.hpp>
 
@@ -31,16 +33,13 @@ class BlockType {
 
   BlockType(const Property &_p, const Ability &_a)
       : property(_p), ability(_a) {}
-  BlockType(const BlockType &_bt) {
-    property = _bt.property;
-    ability = _bt.ability;
-  }
+
   BlockType() = default;
 
-  Property property;
-  Ability ability;
+  Property property = Property::SAFE;
+  Ability ability = Ability::NONE;
 };
 
 }  // namespace pathfinding
 
-#endif  // PATHFINDING_BLOCKTYPE_H_
+#endif  // INCLUDE_PF_BLOCKTYPE_HPP_

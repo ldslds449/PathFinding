@@ -1,5 +1,7 @@
-#ifndef PATHFINDING_FINDER_IDBESTFIRSTFINDER_H_
-#define PATHFINDING_FINDER_IDBESTFIRSTFINDER_H_
+// Copyright 2024 ldslds449
+
+#ifndef INCLUDE_PF_FINDER_IDBESTFIRSTFINDER_HPP_
+#define INCLUDE_PF_FINDER_IDBESTFIRSTFINDER_HPP_
 
 #include <pf/Finder/IDAstarFinder.hpp>
 
@@ -19,9 +21,9 @@ class IDBestFirstFinder
 
  public:
   IDBestFirstFinder() = default;
-  IDBestFirstFinder(const FinderConfig &_config) : BASE(_config) {}
+  explicit IDBestFirstFinder(const FinderConfig &_config) : BASE(_config) {}
 };
 
 }  // namespace pathfinding
 
-#endif  // PATHFINDING_FINDER_IDBESTFIRSTFINDER_H_
+#endif  // INCLUDE_PF_FINDER_IDBESTFIRSTFINDER_HPP_
