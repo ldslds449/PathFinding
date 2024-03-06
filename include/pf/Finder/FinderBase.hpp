@@ -169,7 +169,9 @@ class FinderBase {
 
         std::cout << "Position " << goalPos
                   << (goal_is_in_unload_chunk ? " is in an unload chunk" : "")
-                  << (goal_is_too_far ? " is too far away from the player" : "")
+                  << (!goal_is_in_unload_chunk && goal_is_too_far
+                          ? " is too far away from the player"
+                          : "")
                   << ", try to get closer " << nowGoalPos
                   << " to load the chunk." << std::endl
                   << std::flush;
