@@ -9,6 +9,7 @@
 #include <pf/Finder/IDAstarFinder.hpp>
 #include <pf/Finder/IDBestFirstFinder.hpp>
 #include <pf/Finder/ILSFinder.hpp>
+#include <pf/Finder/MultiGoalFinder.hpp>
 #include <pf/Finder/UCSFinder.hpp>
 
 #endif  // INCLUDE_PF_FINDER_FINDER_HPP_
