@@ -153,9 +153,9 @@ class IDAstarFinder
         const TPos newPos = now.pos + newOffset;
         CostT addGCost = dir.cost;
         if (newOffset.y > 0)
-          addGCost += climbCost * (newOffset.y);
+          addGCost += climbCost * std::abs(newOffset.y);
         else if (newOffset.y < 0)
-          addGCost += fallCost * (-newOffset.y);
+          addGCost += fallCost * std::abs(newOffset.y);
 
         CostT newGCost = now.gcost + addGCost;
         CostT newFCost =

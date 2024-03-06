@@ -623,10 +623,10 @@ class FinderBase {
     //
     //    O
     if (config.jumpOverBlock) {
-      directions.emplace_back(TPos{2, 0, 0}, TEdgeEval::eval(TPos{2, 0, 0}));
-      directions.emplace_back(TPos{0, 0, 2}, TEdgeEval::eval(TPos{0, 0, 2}));
-      directions.emplace_back(TPos{-2, 0, 0}, TEdgeEval::eval(TPos{-2, 0, 0}));
-      directions.emplace_back(TPos{0, 0, -2}, TEdgeEval::eval(TPos{0, 0, -2}));
+      directions.emplace_back(TPos{2, 0, 0}, TEdgeEval::eval(TPos{2, 1, 0}));
+      directions.emplace_back(TPos{0, 0, 2}, TEdgeEval::eval(TPos{0, 1, 2}));
+      directions.emplace_back(TPos{-2, 0, 0}, TEdgeEval::eval(TPos{-2, 1, 0}));
+      directions.emplace_back(TPos{0, 0, -2}, TEdgeEval::eval(TPos{0, 1, -2}));
     }
 
     return directions;

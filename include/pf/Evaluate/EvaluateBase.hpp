@@ -3,8 +3,8 @@
 #ifndef INCLUDE_PF_EVALUATE_EVALUATEBASE_HPP_
 #define INCLUDE_PF_EVALUATE_EVALUATEBASE_HPP_
 
-#include <pf/Vec3.hpp>
 #include <pf/Type.hpp>
+#include <pf/Vec3.hpp>
 
 namespace pathfinding {
 
@@ -20,7 +20,7 @@ class EvaluateBase {
 
   template <class TPos>
   inline static CostT eval(const TPos &target) {
-    return TDrived::evalImpl(TPos(), target);
+    return TDrived::evalImpl(TPos(0, 0, 0), target);
   }
 
  private:
