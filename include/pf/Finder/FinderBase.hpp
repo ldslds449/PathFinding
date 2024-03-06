@@ -142,8 +142,8 @@ class FinderBase {
     TPos lastPos = from, nowGoalPos;
     const TPos &goalPos = goal.getGoalPosition();
     const int far_threshold = 3 * 16;  // 3 chunks
-    float threshold_discount = 1.0;
-    const float threshold_discount_step = 0.2;  // 1.0, 0.8, 0.6, 0.4, 0.2, 0.0
+    int threshold_discount = 100;
+    const int threshold_discount_step = 20;  // 100, 80, 60, 40, 20, 0
 
     for (int i = 0;; ++i) {
       // check retry time
@@ -159,9 +159,8 @@ class FinderBase {
 
       // current threshold and step
       const int cur_far_threshold =
-          (threshold_discount <= 0.0
-               ? 0
-               : static_cast<int>(far_threshold * threshold_discount));
+          (threshold_discount <= 0 ? 0
+                                   : far_threshold * threshold_discount / 100);
       const int cur_step = static_cast<int>(
           std::min(static_cast<double>(cur_far_threshold), vecDist));
       std::cout << "Far Threshold: " << cur_far_threshold
@@ -205,7 +204,7 @@ class FinderBase {
         auto result = run(lastPos, goal);
         if (std::get<0>(result)) {
           std::cout << "Find Path Error\n" << std::flush;
-          if (threshold_discount <= 0.0) {
+          if (threshold_discount <= 0) {
             return false;
           }
           threshold_discount -= threshold_discount_step;
@@ -213,7 +212,7 @@ class FinderBase {
         } else if (std::get<1>(result)) {
           std::cout << "Moving Error, replanning the path\n" << std::flush;
           lastPos = std::get<2>(result);
-          threshold_discount = 1.0;  // reset
+          threshold_discount = 100;  // reset
           continue;
         } else {
           return true;
