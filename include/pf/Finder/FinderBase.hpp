@@ -164,6 +164,9 @@ class FinderBase {
                : static_cast<int>(far_threshold * threshold_discount));
       const int cur_step = static_cast<int>(
           std::min(static_cast<double>(cur_far_threshold), vecDist));
+      std::cout << "Far Threshold: " << cur_far_threshold
+                << ", Threshold Discount: " << threshold_discount
+                << ", Step: " << cur_step << std::endl;
 
       // the goal is in a unload chunk, or the goal is too far away from the
       // player
