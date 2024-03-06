@@ -92,7 +92,8 @@ class MultiGoalFinder
       infoTable[now].closed = true;
 
       // check if this node is the goal
-      if (goal.isSuitableGoal(now)) {
+      if ((goalExist && now == to) ||
+          (!goalExist && goal.isSuitableGoal(now))) {
         found = true;
         last = now;
         break;
