@@ -3,6 +3,7 @@
 #ifndef INCLUDE_PF_FINDER_FINDERBASE_HPP_
 #define INCLUDE_PF_FINDER_FINDERBASE_HPP_
 
+#include <algorithm>
 #include <chrono>
 #include <cmath>
 #include <iostream>
@@ -140,8 +141,9 @@ class FinderBase {
 
     TPos lastPos = from, nowGoalPos;
     const TPos &goalPos = goal.getGoalPosition();
-    const int step = 2 * 16;           // 2 chunks
     const int far_threshold = 3 * 16;  // 3 chunks
+    float threshold_discount = 1.0;
+    const float threshold_discount_step = 0.2;  // 1.0, 0.8, 0.6, 0.4, 0.2, 0.0
 
     for (int i = 0;; ++i) {
       // check retry time
@@ -150,22 +152,33 @@ class FinderBase {
         return false;
       }
 
-      // the goal is in a unload chunk, or the goal is too far away from the
-      // player
+      // direction vector
       const TPos vec = goalPos - lastPos;
       const TPos vecXZ = vec.getXZ();
+      const double vecDist = std::sqrt(vecXZ.squaredNorm());
+
+      // current threshold and step
+      const int cur_far_threshold =
+          (threshold_discount <= 0.0
+               ? 0
+               : static_cast<int>(far_threshold * threshold_discount));
+      const int cur_step = static_cast<int>(
+          std::min(static_cast<double>(cur_far_threshold), vecDist));
+
+      // the goal is in a unload chunk, or the goal is too far away from the
+      // player
       bool goal_is_in_unload_chunk =
           getBlockType(goalPos).is(BlockType::UNKNOWN);
-      bool goal_is_too_far = vecXZ.sum() > far_threshold;
+      bool goal_is_too_far = vecDist > cur_far_threshold;
+
       if (goal_is_in_unload_chunk || goal_is_too_far) {
-        const auto vecUnit = static_cast<const Vec3<double>>(vecXZ) /
-                             std::sqrt(vecXZ.squaredNorm());
+        const auto vecUnit = static_cast<const Vec3<double>>(vecXZ) / vecDist;
 
         nowGoalPos.x = lastPos.x + static_cast<typename TPos::value_type>(
-                                       std::floor(vecUnit.x * step));
+                                       std::floor(vecUnit.x * cur_step));
         nowGoalPos.y = lastPos.y;
         nowGoalPos.z = lastPos.z + static_cast<typename TPos::value_type>(
-                                       std::floor(vecUnit.z * step));
+                                       std::floor(vecUnit.z * cur_step));
 
         std::cout << "Position " << goalPos
                   << (goal_is_in_unload_chunk ? " is in an unload chunk" : "")
@@ -189,10 +202,15 @@ class FinderBase {
         auto result = run(lastPos, goal);
         if (std::get<0>(result)) {
           std::cout << "Find Path Error\n" << std::flush;
-          return false;
+          if (threshold_discount <= 0.0) {
+            return false;
+          }
+          threshold_discount -= threshold_discount_step;
+          continue;
         } else if (std::get<1>(result)) {
           std::cout << "Moving Error, replanning the path\n" << std::flush;
           lastPos = std::get<2>(result);
+          threshold_discount = 1.0;  // reset
           continue;
         } else {
           return true;
