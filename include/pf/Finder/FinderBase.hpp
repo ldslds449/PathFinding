@@ -13,6 +13,7 @@
 #include <thread>
 #include <tuple>
 #include <unordered_map>
+#include <unordered_set>
 #include <utility>
 #include <vector>
 
@@ -35,6 +36,7 @@ class FinderConfig {
   bool moveDiagonally = true;
   bool jumpOverBlock = false;
   bool enableFalling = true;
+  bool predictByCache = false;
 };
 
 template <class TDrived, class TPos>
@@ -42,6 +44,9 @@ class FinderBase {
  protected:
   std::unordered_map<TPos, BlockType>
       blockTypeCache;  // cache the block types for each searching
+  std::unordered_set<TPos>
+      isPosUpdated;  // whether the position is updated in this searching
+
   FinderConfig config;
 
   // direction to generate next node
@@ -60,8 +65,13 @@ class FinderBase {
   inline std::tuple<PathResult, std::shared_ptr<Path<TPos>>, U64> findPath(
       const TPos &from, const goal::GoalBase<TPos> &goal,
       const U64 &timeLimit = 0, const U64 &nodeLimit = 0) {
-    // clear the hash table of block type
-    blockTypeCache.clear();
+    if (!config.predictByCache) {
+      // clear the hash table of block type before each searching
+      resetCache();
+    } else {
+      // clear the set of updated block before each searching
+      isPosUpdated.clear();
+    }
     return static_cast<TDrived *>(this)->findPathImpl(from, goal, timeLimit,
                                                       nodeLimit);
   }
@@ -225,16 +235,54 @@ class FinderBase {
   /*
    * Get the block type of the block at a specific position
    */
-
   inline BlockType getBlockType(const TPos &pos) {
-    auto it = blockTypeCache.find(pos);
-    if (it != blockTypeCache.end()) {
-      return it->second;
+    if (config.predictByCache) {  // if we use previous cache as a prediction
+      if (isPosUpdated.count(pos) > 0) {
+        // we have already seen this position before in this searching
+        return blockTypeCache[pos];
+      } else {
+        BlockType type =
+            static_cast<const TDrived *>(this)->getBlockTypeImpl(pos);
+        // check whether the position is in a loaded chunk
+        if (!type.is(BlockType::UNKNOWN)) {
+          // the position is in a loaded chunk, so we can cache it as an update
+          // and return it
+          blockTypeCache.emplace(pos, type);  // cache
+          isPosUpdated.insert(pos);
+          return type;
+        } else {
+          // try to find the position in the cache
+          auto it = blockTypeCache.find(pos);
+          if (it != blockTypeCache.end()) {
+            // we found the info in the cache, and we use it as a prediction
+            // we got this position info from the previous searching
+            isPosUpdated.insert(pos);
+            return it->second;
+          } else {
+            // the position is in neither a loaded chunk nor the cache, just
+            // return the result that we get
+            blockTypeCache.emplace(pos, type);  // cache
+            isPosUpdated.insert(pos);
+            return type;
+          }
+        }
+      }
+    } else {  // just cache the block info only for this searching
+      auto it = blockTypeCache.find(pos);
+      if (it != blockTypeCache.end()) {
+        return it->second;
+      }
+      BlockType type =
+          static_cast<const TDrived *>(this)->getBlockTypeImpl(pos);
+      blockTypeCache.emplace(pos, type);  // cache
+      return type;
     }
-    BlockType type = static_cast<const TDrived *>(this)->getBlockTypeImpl(pos);
-    blockTypeCache.emplace(pos, type);  // cache
-    return type;
   }
+
+  /*
+   * Clear block type cache
+   */
+  inline void resetCache() { blockTypeCache.clear(); }
 
   /*
    * calculate the fall damage
