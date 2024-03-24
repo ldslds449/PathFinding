@@ -11,13 +11,13 @@ namespace pathfinding {
 
 namespace goal {
 
-template <class TPos, template <class> class TEval>
+template <class TPos, class TEval>
 class DistanceGoal : public GoalBase<TPos> {
   using T = typename TPos::value_type;
 
  public:
   bool isSuitableGoal(const TPos &pos) const override {
-    return TEval<TPos>::eval(pos) <= dist_tol;
+    return TEval::eval<TPos>(pos) <= dist_tol;
   }
 
   DistanceGoal(const TPos &_goalPos, const T &_dist_tol)
