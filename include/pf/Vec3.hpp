@@ -143,6 +143,10 @@ class Vec3 {
     z += z_offset;
   }
 
+  inline T maxAxisVal() { return std::max(std::max(x, y), z); }
+
+  inline T minAxisVal() { return std::min(std::min(x, y), z); }
+
   inline Vec3<T> abs() const {
     return Vec3<T>{std::abs(x), std::abs(y), std::abs(z)};
   }
@@ -175,11 +179,6 @@ class Vec3 {
                static_cast<TReturn>(target.y - y) +
            static_cast<TReturn>(target.z - z) *
                static_cast<TReturn>(target.z - z);
-  }
-
-  inline T diagonalDist(const Vec3<T> &target) const {
-    return std::max(std::max(std::abs(target.x - x), std::abs(target.y - y)),
-                    std::abs(target.z - z));
   }
 
   inline std::size_t hash() const {
