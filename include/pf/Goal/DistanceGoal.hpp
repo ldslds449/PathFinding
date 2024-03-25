@@ -17,7 +17,7 @@ class DistanceGoal : public GoalBase<TPos> {
 
  public:
   bool isSuitableGoal(const TPos &pos) const override {
-    const T val = TEval::eval<TPos>(pos, goalPos);
+    const T val = TEval::template eval<TPos>(pos, GoalBase<TPos>::goalPos);
     return val <= dist_tol;
   }
 
