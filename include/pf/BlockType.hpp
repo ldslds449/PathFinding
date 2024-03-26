@@ -40,6 +40,10 @@ class BlockType {
     return property == other.property && ability == other.ability;
   }
 
+  bool operator!=(const BlockType const &other) const {
+    return property != other.property || ability != other.ability;
+  }
+
   Property property = Property::SAFE;
   Ability ability = Ability::NONE;
 };
