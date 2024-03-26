@@ -14,7 +14,7 @@ namespace eval {
 class Euclidean final : public EvaluateBase<Euclidean> {
  public:
   template <class TPos>
-  static CostT evalImpl(const TPos &pos, const TPos &target) {
+  static double evalImpl(const TPos &pos, const TPos &target) {
     return std::sqrt(pos.squaredEuclideanDist(target));
   }
 
