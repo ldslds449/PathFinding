@@ -177,24 +177,16 @@ class Vec3 {
 
   inline T sum() const { return x + y + z; }
 
-  template <class TReturn = T>
-  inline TReturn squaredNorm() const {
-    return squaredEuclideanDist<TReturn>({0, 0, 0});
-  }
+  inline T squaredNorm() const { return squaredEuclideanDist({0, 0, 0}); }
 
   inline T manhattanDist(const Vec3<T> &target) const {
     return std::abs(target.x - x) + std::abs(target.y - y) +
            std::abs(target.z - z);
   }
 
-  template <class TReturn = T>
-  inline TReturn squaredEuclideanDist(const Vec3<T> &target) const {
-    return static_cast<TReturn>(target.x - x) *
-               static_cast<TReturn>(target.x - x) +
-           static_cast<TReturn>(target.y - y) *
-               static_cast<TReturn>(target.y - y) +
-           static_cast<TReturn>(target.z - z) *
-               static_cast<TReturn>(target.z - z);
+  inline T squaredEuclideanDist(const Vec3<T> &target) const {
+    return (target.x - x) * (target.x - x) + (target.y - y) * (target.y - y) +
+           (target.z - z) * (target.z - z);
   }
 
   inline std::size_t hash() const {
