@@ -36,11 +36,11 @@ class BlockType {
 
   BlockType() = default;
 
-  bool operator==(const BlockType const &other) const {
+  bool operator==(const BlockType &other) const {
     return property == other.property && ability == other.ability;
   }
 
-  bool operator!=(const BlockType const &other) const {
+  bool operator!=(const BlockType &other) const {
     return property != other.property || ability != other.ability;
   }
 
