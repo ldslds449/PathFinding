@@ -16,8 +16,8 @@ class Octile final : public EvaluateBase<Octile> {
  public:
   template <class TPos>
   static CostT evalImpl(const TPos &pos, const TPos &target) {
-    constexpr double cost_3d = std::sqrt(3) - std::sqrt(2);
-    constexpr double cost_2d = std::sqrt(2) - 1;
+    const double cost_3d = std::sqrt(3) - std::sqrt(2);
+    const double cost_2d = std::sqrt(2) - 1;
     const TPos delta = (target - pos).abs();
 
     // sort
