@@ -85,7 +85,6 @@ class IDAstarFinder
     };
 
     const TPos &to = goal.getGoalPosition();
-    const bool goalExist = BASE::isGoalExist(goal);
 
     // stack
     std::stack<Node> st;
@@ -126,7 +125,7 @@ class IDAstarFinder
       }
 
       // whether we visit all children
-      if (now.dirIdx >= directions.size()) {
+      if (static_cast<std::size_t>(now.dirIdx) >= directions.size()) {
         st.pop();
         stackList.erase(now.pos);
         continue;
@@ -141,21 +140,21 @@ class IDAstarFinder
         break;
       }
 
-      // check jump
-      bool canJump =
-          BASE::getBlockType(now.pos + TPos{0, 3, 0}).is(BlockType::AIR);
-
       // get next neighbour
       const typename BASE::Direction &dir = directions[now.dirIdx];
 
       std::vector<TPos> newOffsets = BASE::isAbleToWalkTo(now.pos, dir.offset);
       for (TPos &newOffset : newOffsets) {
-        const TPos newPos = now.pos + newOffset;
+        // action cost
         CostT addGCost = dir.cost;
         if (newOffset.y > 0)
           addGCost += climbCost * std::abs(newOffset.y);
         else if (newOffset.y < 0)
           addGCost += fallCost * std::abs(newOffset.y);
+
+        // node extra cost
+        const TPos newPos = now.pos + newOffset;
+        addGCost += BASE::getBlockExtraCost(newPos);
 
         CostT newGCost = now.gcost + addGCost;
         CostT newFCost =

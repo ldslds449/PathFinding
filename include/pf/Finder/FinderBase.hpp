@@ -315,6 +315,13 @@ class FinderBase {
   }
 
   /*
+   * get falling damage tolerance
+   */
+  inline CostT getBlockExtraCost(const TPos &pos) const {
+    return static_cast<const TDrived *>(this)->getBlockExtraCostImpl(pos);
+  }
+
+  /*
    * This should be implemented in subclass
    */
   virtual std::tuple<PathResult, std::shared_ptr<Path<TPos>>, U64> findPathImpl(
@@ -362,7 +369,14 @@ class FinderBase {
   /*
    * This may be override in subclass
    */
-  inline float getfallingDamageToleranceImpl() const { return 0.0; }
+  virtual float getfallingDamageToleranceImpl() const { return 0.0; }
+
+  /*
+   * This may be override in subclass
+   */
+  virtual CostT getBlockExtraCostImpl([[maybe_unused]] const TPos &pos) const {
+    return 0.0;
+  }
 
  protected:
   inline bool isTimeUp(const std::chrono::steady_clock::time_point &start,

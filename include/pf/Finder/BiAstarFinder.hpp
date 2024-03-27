@@ -56,8 +56,7 @@ class BiAstarFinder
       // value: {Parent, gCost of key, hCost of key, closed}
       std::unordered_map<TPos, PosInfo> infoTable;
 
-      std::function<std::vector<TPos>(const TPos &, const TPos &,
-                                      const float &)>
+      std::function<std::vector<TPos>(const TPos &pos, const TPos &XZoffset)>
           walkable;
 
       CostT eval(const TPos &pos) const {
@@ -70,11 +69,11 @@ class BiAstarFinder
 
     // create two datasets
     const TPos &to = goal.getGoalPosition();
-    DataSet forward(to, [&](const TPos &a, const TPos &b, const float &c) {
-      return BASE::isAbleToWalkTo(a, b, c);
+    DataSet forward(to, [&](const TPos &pos, const TPos &XZoffset) {
+      return BASE::isAbleToWalkTo(pos, XZoffset);
     });
-    DataSet backward(from, [&](const TPos &a, const TPos &b, const float &c) {
-      return BASE::isAbleToWalkFrom(a, b, c);
+    DataSet backward(from, [&](const TPos &pos, const TPos &XZoffset) {
+      return BASE::isAbleToWalkFrom(pos, XZoffset);
     });
 
     // time limit
@@ -137,16 +136,19 @@ class BiAstarFinder
       // find neighbour
       for (const typename BASE::Direction &dir : directions) {
         std::vector<TPos> newOffsets = select.walkable(now, dir.offset);
-
         for (TPos &newOffset : newOffsets) {
+          // action cost
           CostT addGCost = dir.cost;
           if (newOffset.y > 0)
             addGCost += climbCost * std::abs(newOffset.y);
           else if (newOffset.y < 0)
             addGCost += fallCost * std::abs(newOffset.y);
 
-          // add new position
+          // node extra cost
           const TPos newPos = now + newOffset;
+          addGCost += BASE::getBlockExtraCost(newPos);
+
+          // add new position
           const TPos &parent = now;
           const CostT newGCost = nowGcost + addGCost;
 

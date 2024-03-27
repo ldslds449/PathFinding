@@ -108,14 +108,18 @@ class AstarFinder
       for (const typename BASE::Direction &dir : directions) {
         std::vector<TPos> newOffsets = BASE::isAbleToWalkTo(now, dir.offset);
         for (TPos &newOffset : newOffsets) {
+          // action cost
           CostT addGCost = dir.cost;
           if (newOffset.y > 0)
             addGCost += climbCost * std::abs(newOffset.y);
           else if (newOffset.y < 0)
             addGCost += fallCost * std::abs(newOffset.y);
 
-          // add new position
+          // node extra cost
           const TPos newPos = now + newOffset;
+          addGCost += BASE::getBlockExtraCost(newPos);
+
+          // add new position
           const TPos &parent = now;
           const CostT newGCost = nowGCost + addGCost;
 
