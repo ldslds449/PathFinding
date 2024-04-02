@@ -13,7 +13,7 @@
 #include <vector>
 
 #include <pf/Evaluate/Evaluate.hpp>
-#include <pf/Finder/FinderBase.hpp>
+#include <pf/Finder/CompleteFinder.hpp>
 #include <pf/Heap/TableHeap.hpp>
 #include <pf/Type.hpp>
 #include <pf/Vec3.hpp>
@@ -26,11 +26,11 @@ template <class TDrived, class TPos = Position,
           class TEstimateEval = eval::Manhattan,
           class TWeighted = weight::ConstWeighted<>>
 class BiAstarFinder
-    : public FinderBase<
+    : public CompleteFinder<
           BiAstarFinder<TDrived, TPos, TEdgeEval, TEstimateEval, TWeighted>,
           TPos> {
  private:
-  using BASE = FinderBase<
+  using BASE = CompleteFinder<
       BiAstarFinder<TDrived, TPos, TEdgeEval, TEstimateEval, TWeighted>, TPos>;
 
  public:

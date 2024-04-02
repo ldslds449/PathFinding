@@ -12,7 +12,7 @@
 
 #include <pf/Evaluate/Evaluate.hpp>
 #include <pf/Finder/AstarFinder.hpp>
-#include <pf/Finder/FinderBase.hpp>
+#include <pf/Finder/CompleteFinder.hpp>
 #include <pf/Heap/TableHeap.hpp>
 #include <pf/Type.hpp>
 #include <pf/Vec3.hpp>
@@ -25,11 +25,11 @@ template <class TDrived, class TPos = Position,
           class TEstimateEval = eval::Manhattan,
           class TWeighted = weight::ConstWeighted<>>
 class MultiGoalFinder
-    : public FinderBase<
+    : public CompleteFinder<
           MultiGoalFinder<TDrived, TPos, TEdgeEval, TEstimateEval, TWeighted>,
           TPos> {
  private:
-  using BASE = FinderBase<
+  using BASE = CompleteFinder<
       MultiGoalFinder<TDrived, TPos, TEdgeEval, TEstimateEval, TWeighted>,
       TPos>;
 

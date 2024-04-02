@@ -13,7 +13,7 @@
 #include <vector>
 
 #include <pf/Evaluate/Evaluate.hpp>
-#include <pf/Finder/FinderBase.hpp>
+#include <pf/Finder/CompleteFinder.hpp>
 #include <pf/Type.hpp>
 #include <pf/Vec3.hpp>
 #include <pf/Weighted/Weighted.hpp>
@@ -25,11 +25,11 @@ template <class TDrived, class TPos = Position,
           class TEstimateEval = eval::Manhattan,
           class TWeighted = weight::ConstWeighted<>>
 class IDAstarFinder
-    : public FinderBase<
+    : public CompleteFinder<
           IDAstarFinder<TDrived, TPos, TEdgeEval, TEstimateEval, TWeighted>,
           TPos> {
  private:
-  using BASE = FinderBase<
+  using BASE = CompleteFinder<
       IDAstarFinder<TDrived, TPos, TEdgeEval, TEstimateEval, TWeighted>, TPos>;
 
  public:
