@@ -99,10 +99,11 @@ class FinderBase {
    * Return: whether movements are successful
    */
   inline bool findPathAndGo(const TPos &from, const goal::GoalBase<TPos> &goal,
+                            const std::size_t &max_interval = 1,
                             const U64 &timeLimit = 0, const U64 &nodeLimit = 0,
                             const int &retry = 20) {
     return static_cast<TDrived *>(this)->findPathAndGoImpl(
-        from, goal, timeLimit, nodeLimit, retry);
+        from, goal, max_interval, timeLimit, nodeLimit, retry);
   }
 
   /*
@@ -216,6 +217,7 @@ class FinderBase {
    */
   virtual bool findPathAndGoImpl(const TPos &from,
                                  const goal::GoalBase<TPos> &goal,
+                                 const std::size_t &max_interval,
                                  const U64 &timeLimit, const U64 &nodeLimit,
                                  const int &retry) = 0;
 

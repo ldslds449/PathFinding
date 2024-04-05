@@ -18,8 +18,8 @@ class CompleteFinder
 
  public:
   bool findPathAndGoImpl(const TPos &from, const goal::GoalBase<TPos> &goal,
-                         const U64 &timeLimit, const U64 &nodeLimit,
-                         const int &retry) final {
+                         const std::size_t &max_interval, const U64 &timeLimit,
+                         const U64 &nodeLimit, const int &retry) final {
     auto run = [&](const TPos &nowFrom, const goal::GoalBase<TPos> &nowGoal)
         -> std::tuple<bool, bool,
                       TPos> {  // find path error, move error, current location
@@ -32,7 +32,12 @@ class CompleteFinder
       auto &path = std::get<1>(r);
       auto &nodeSearch = std::get<2>(r);
 
-      std::cout << "Length: " << path->size() << std::endl;
+      auto path_len = path->size();
+      path->refine(max_interval);
+      auto refined_path_len = path->size();
+
+      std::cout << "Length: " << path_len
+                << ", After refinement: " << refined_path_len << std::endl;
       std::cout << "Node Search: " << nodeSearch << std::endl;
       std::cout << "Took: "
                 << std::chrono::duration_cast<std::chrono::milliseconds>(t2 -

@@ -32,6 +32,7 @@ class Path {
 
   // only leave important point
   inline void refine(const std::size_t &max_interval) {
+    if (max_interval <= 1) return;  // do nothing
     std::vector<TPos> new_nodes;
     std::size_t interval = 0;
     for (std::size_t i = 0; i < nodes.size(); ++i) {
